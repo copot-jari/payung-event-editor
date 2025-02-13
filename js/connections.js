@@ -1,5 +1,7 @@
 export function updateConnections(nodes, connections) {
-    connections.forEach((conn) => {
+  const svg = document.getElementById("connections");
+  const svgCTM = svg.getScreenCTM();
+  connections.forEach((conn) => {
       const fromNode = nodes.find((n) => n.id === conn.from.nodeId);
       const toNode = nodes.find((n) => n.id === conn.to.nodeId);
       if (!fromNode || !toNode) return;
@@ -7,14 +9,22 @@ export function updateConnections(nodes, connections) {
       if (!fromRow) return;
       const fromRect = fromRow.outConnector.getBoundingClientRect();
       const toRect = toNode.inputConnector.getBoundingClientRect();
-      const startX = fromRect.left + fromRect.width / 2;
-      const startY = fromRect.top + fromRect.height / 2;
-      const endX = toRect.left + toRect.width / 2;
-      const endY = toRect.top + toRect.height / 2;
-      conn.line.setAttribute("x1", startX);
-      conn.line.setAttribute("y1", startY);
-      conn.line.setAttribute("x2", endX);
-      conn.line.setAttribute("y2", endY);
-    });
-  }
-  
+      const startClientX = fromRect.left + fromRect.width / 2;
+      const startClientY = fromRect.top + fromRect.height / 2;
+      const endClientX = toRect.left + toRect.width / 2;
+      const endClientY = toRect.top + toRect.height / 2;
+      const startSVG = clientToSvg(svg, svgCTM, startClientX, startClientY);
+      const endSVG = clientToSvg(svg, svgCTM, endClientX, endClientY);
+      conn.line.setAttribute("x1", startSVG.x);
+      conn.line.setAttribute("y1", startSVG.y);
+      conn.line.setAttribute("x2", endSVG.x);
+      conn.line.setAttribute("y2", endSVG.y);
+  });
+}
+
+function clientToSvg(svg, svgCTM, clientX, clientY) {
+  let pt = svg.createSVGPoint();
+  pt.x = clientX;
+  pt.y = clientY;
+  return pt.matrixTransform(svgCTM.inverse());
+}
