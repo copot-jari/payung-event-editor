@@ -12,8 +12,8 @@ A simple node editor module for payung event datatype. To be integrated with Pay
 
 ## Known Issues
 Bugs and glitches:
-- [ ] Focus outline does not dissapear sometimes
-- [ ] Relational line is drawn incorrectly if zoom changes from default
+- [x] Focus outline does not dissapear sometimes
+- [x] Relational line is drawn incorrectly if zoom changes from default
 
 ## Features
 Todo List:
@@ -23,8 +23,8 @@ Todo List:
 - [x] Save to SQLite
 - [ ] Music player for event
 - [ ] Integrate with scene editor (upcoming)
-- [ ] Zoom In/Out for more working space
-- [ ] Move to Canvas
+- [x] Zoom In/Out for more working space
+- [x] Panning
 - [ ] Move event without choice
 - [ ] Flags gained
 - [ ] Flags remove
