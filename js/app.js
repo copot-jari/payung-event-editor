@@ -296,7 +296,7 @@ function loadStateFromDBToUI() {
           nodeData.dialogue = dialogue || "";
           nodeData.speaker = speaker || "";
       }
-      const spriteRows = dbInstance.exec(`SELECT id, src, x, y, width, height, focus, animation_class FROM sprites WHERE scene_node_id = ?`, [id])[0]?.values || [];
+      const spriteRows = dbInstance.exec(`SELECT id, src, x, y, width, height, focus, animation_class, continuity_id FROM sprites WHERE scene_node_id = ?`, [id])[0]?.values || [];
       spriteRows.forEach(([spriteId, src, spriteX, spriteY, width, height, focus, animation_class]) => {
           const spriteDataObject = {
               src,
@@ -306,6 +306,7 @@ function loadStateFromDBToUI() {
               height,
               focus: focus === 1, 
               animationClass: animation_class || '',
+              continuityIdentifier: continuity_id || '',
               sfx: []
           };
           const sfxRows = dbInstance.exec(`SELECT file_name, file_data, loop, auto, volume FROM sprite_sfx WHERE sprite_id = ?`, [spriteId])[0]?.values || [];

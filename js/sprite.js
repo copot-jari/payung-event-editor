@@ -9,6 +9,7 @@ const sceneEditor = $('sceneEditor'),
       spriteDetailModal = $('spriteDetailModal'),
       spriteFocusToggle = $('spriteFocusToggle'),
       spriteAnimClassInput = $('spriteAnimClassInput'),
+      spriteContinuityIdentifierInput = $('spriteContinuityIdentifierInput'), 
       spriteSfxList = $('spriteSfxList'),
       addSpriteSfxBtn = $('addSpriteSfxBtn'),
       saveSpriteDetailsBtn = $('saveSpriteDetailsBtn'),
@@ -47,6 +48,7 @@ spriteUpload.addEventListener('change', (e) => {
         sprite.style.top = (sceneEditor.clientHeight / 2 - spriteHeight / 2) + 'px';
         sprite.dataset.focus = 'true';
         sprite.dataset.animationClass = '';
+        sprite.dataset.continuityIdentifier = ''; 
         sprite.dataset.sfx = '[]';
         makeDraggableAndResizable(sprite);
         sceneEditor.appendChild(sprite);
@@ -84,6 +86,7 @@ function openSpriteDetailModal(spriteElement) {
     currentSpriteElement = spriteElement;
     spriteFocusToggle.checked = spriteElement.dataset.focus === 'true';
     spriteAnimClassInput.value = spriteElement.dataset.animationClass || '';
+    spriteContinuityIdentifierInput.value = spriteElement.dataset.continuityIdentifier || ''; 
     spriteSfxList.innerHTML = '';
     let sfxArray = [];
     try {
@@ -160,6 +163,7 @@ saveSpriteDetailsBtn.addEventListener('click', () => {
     if (!currentSpriteElement) return;
     currentSpriteElement.dataset.focus = spriteFocusToggle.checked ? 'true' : 'false';
     currentSpriteElement.dataset.animationClass = spriteAnimClassInput.value;
+    currentSpriteElement.dataset.continuityIdentifier = spriteContinuityIdentifierInput.value; 
     currentSpriteElement.style.filter = spriteFocusToggle.checked ? 'brightness(100%)' : 'brightness(80%)';
     const sfxRows = spriteSfxList.querySelectorAll('.sfx-row');
     const sfxData = [];
@@ -272,6 +276,7 @@ export function loadSceneForNode(nodeData) {
             sprite.dataset.focus = 'true';
         }
         sprite.dataset.animationClass = spriteData.animationClass || '';
+        sprite.dataset.continuityIdentifier = spriteData.continuityIdentifier || ''; 
         sprite.dataset.sfx = JSON.stringify(spriteData.sfx || []);
         makeDraggableAndResizable(sprite);
         sceneEditor.appendChild(sprite);
@@ -305,6 +310,7 @@ export function commitSceneChangesToNodeData() {
             height: parseInt(sprite.style.height, 10),
             focus: sprite.dataset.focus === 'true',
             animationClass: sprite.dataset.animationClass || '',
+            continuityIdentifier: sprite.dataset.continuityIdentifier || '', 
             sfx: sfxData
         });
     });

@@ -59,6 +59,7 @@ export async function initDatabase() {
         height INTEGER NOT NULL,
         focus BOOLEAN NOT NULL,
         animation_class TEXT,
+        continuity_id TEXT,
         FOREIGN KEY (scene_node_id) REFERENCES nodes(id)
       );
       CREATE TABLE sprite_sfx (
@@ -99,8 +100,8 @@ export async function initDatabase() {
         db.run("INSERT INTO nodes VALUES (?, ?, ?, ?)", [id, x, y, title]);
         db.run("INSERT INTO scenes (node_id, background_image, dialogue, speaker) VALUES (?, ?, ?, ?)", [id, scene.background, dialogue, speaker]);
         scene.sprites.forEach(spriteData => {
-            const spriteInsertResult = db.run("INSERT INTO sprites (scene_node_id, src, x, y, width, height, focus, animation_class) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                [id, spriteData.src, spriteData.x, spriteData.y, spriteData.width, spriteData.height, spriteData.focus, spriteData.animationClass]
+            const spriteInsertResult = db.run("INSERT INTO sprites (scene_node_id, src, x, y, width, height, focus, animation_class, continuity_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [id, spriteData.src, spriteData.x, spriteData.y, spriteData.width, spriteData.height, spriteData.focus, spriteData.animationClass, spriteData.continuityIdentifier]
             );
             const spriteId = db.exec("SELECT last_insert_rowid()")[0].values[0][0]; 
             spriteData.sfx.forEach(sfxItem => {
