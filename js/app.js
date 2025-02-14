@@ -135,14 +135,15 @@ editor.addEventListener("nodeToConnect", e => {
 window.addEventListener("keyup", e => {
   if (e.key === "Escape") {
       if (connectionSelectionMode) {
+        commitSceneChangesToNodeData()
           sidebar.classList.remove("hidden");
           editItemModal.classList.remove("hidden");
           connectionSelectionMode = false;
       } else if (selectedNode != null) {
           nodes.forEach(n => n.element.classList.remove("border-2", "border-blue-500"));
           selectedNode = null;
-          sidebar.classList.add("hidden");
           commitSceneChangesToNodeData()
+          sidebar.classList.add("hidden");
           spriteDetailModal.classList.add('hidden');;
           editor.style.transform = "";
       }
@@ -153,8 +154,8 @@ editor.addEventListener("click", e => {
   if (e.target === editor) {
       nodes.forEach(n => n.element.classList.remove("border-2", "border-blue-500"));
       selectedNode = null;
-      sidebar.classList.add("hidden");
       commitSceneChangesToNodeData()
+      sidebar.classList.add("hidden");
       spriteDetailModal.classList.add('hidden');;
       editor.style.transform = "";
   }
@@ -223,8 +224,8 @@ addFlagBtn.addEventListener("click", () => flagsList.appendChild(buildFlagRow())
 selectConnectionBtn.addEventListener("click", () => {
   connectionSelectionMode = true;
   selectedConnectionDiv.textContent = "Click on a node to select as connection target...";
-  sidebar.classList.add("hidden");
   commitSceneChangesToNodeData()
+  sidebar.classList.add("hidden");
   spriteDetailModal.classList.add('hidden');;
   editItemModal.classList.add("hidden");
 });
@@ -282,6 +283,7 @@ deleteItemBtn.addEventListener("click", () => {
   if (!currentEditItem) return;
   const nodeData = nodes.find(n => n.id === currentEditItem.nodeId);
   if (!nodeData) return;
+  commitSceneChangesToNodeData();
   editItemModal.classList.add("hidden");
   currentEditItem = null;
   selectNode(nodeData.element, sidebar, editor, nodes);
