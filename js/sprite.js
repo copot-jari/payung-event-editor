@@ -213,7 +213,8 @@ function makeDraggableAndResizable(el) {
     resizeHandle.classList.add('resize-handle');
     resizeHandle.style.width = '10px';
     resizeHandle.style.height = '10px';
-    resizeHandle.style.background = 'rgba(0,0,0,0.5)';
+    resizeHandle.style.background = 'rgb(255, 255, 255)';
+    resizeHandle.style.border = '2px solid black';
     resizeHandle.style.position = 'absolute';
     resizeHandle.style.right = '0';
     resizeHandle.style.bottom = '0';
