@@ -6,6 +6,9 @@
     <title>Payung Dialog Composer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
+    <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
     <style>
       body {
         overflow: overlay;
@@ -20,30 +23,56 @@
         background-color: white;
         transition: background-color 0.2s ease;
       }
-
       input {
         border-radius: 5px;
         padding: 4px 12px !important;
         background-color: #030712;
-        border-color: #3d444d;
+        border-color: #3d444d !important;
       }
-
       select {
         border-radius: 5px;
         padding: 4px 12px !important;
         background-color: #030712;
         border-color: #3d444d;
       }
-
       .node {
         width: 200px;
       }
-
       .connector {
         width: 12px;
         height: 12px;
       }
-
+      .CodeMirror-cursor {
+        border-left: 1px solid white;
+        border-right: 1px solid white;
+      }
+      .cm-editor .cm-cursor {
+        border-left-color: white
+      }
+      .EasyMDEContainer .editor-preview {
+        background-color: #030712 !important;
+        border-color: #3d444d !important;
+        caret-color: white !important;
+        color: #f8f8f2;
+      }
+      .CodeMirror {
+        background-color: #030712 !important;
+        border-color: #3d444d !important;
+        color: #f8f8f2 !important;
+        caret-color: white !important;
+      }
+      .CodeMirror-gutters {
+        background-color: #030712 !important;
+        border-color: #3d444d !important;
+        border-right: 1px solid #444 !important;
+        caret-color: white !important;
+      }
+      .EasyMDEContainer .editor-preview {
+        background-color: #030712 !important;
+        border-color: #3d444d !important;
+        caret-color: white !important;
+        color: #f8f8f2 !important;
+      }
       body {
         --dot-bg: #030712;
         --dot-color: #1c1f29;
@@ -54,17 +83,67 @@
           linear-gradient(var(--dot-bg) calc(var(--dot-space) - var(--dot-size)), transparent 1%) center / var(--dot-space) var(--dot-space),
           var(--dot-color);
       }
+      #sceneEditor {
+        border-radius: 5px;
+        padding: 4px 12px;
+        background-color: #030712;
+        border-color: #3d444d;
+        overflow: hidden;
+      }
     </style>
   </head>
   <body class="text-white bg-gray-100">
     <div id="editor" class="w-[4000px] h-[4000px] relative">
       <svg id="connections" class="absolute w-[4000px] h-[4000px] inset-0 pointer-events-none"></svg>
     </div>
+    
     <div id="sidebar" class="fixed right-0 top-0 w-1/4 h-screen bg-white bg-opacity-5 border-l border-[#343740] shadow-lg p-4 overflow-auto transform transition-all duration-300 hidden">
       <h2 id="nodeTitle" class="text-xl font-bold mb-4"></h2>
-      <div id="nodeItems" class="space-y-2"></div>
-      <button id="addItem" class="mt-4 bg-blue-700  bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-4 py-2 rounded"> Add Choice </button>
+      
+      <div class="collapsible-section">
+        <button type="button" class="section-header flex justify-between items-center w-full text-left text-lg font-bold mb-2">
+          Dialogue Details
+          <svg class="chevron w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div class="section-content">
+          <div id="dialogueContainer" class="mt-4">
+            <input id="speakerInput" type="text" placeholder="Speaker/Actor" class="w-full p-2 mb-2" style="border-color: #3d444d; border-width: 1px; border-style: solid;">
+            <textarea id="dialogueInput" placeholder="Enter dialogue (Markdown supported)" class="w-full h-48"></textarea>
+          </div>
+          <div id="nodeItems" class="space-y-2 mt-2"></div>
+          <button id="addItem" class="mt-4 bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-4 py-2 rounded">Add Choice</button>
+        </div>
+      </div>
+      
+      <div class="collapsible-section mt-4">
+        <button type="button" class="section-header flex justify-between items-center w-full text-left text-lg font-bold mb-2">
+          Scene Editor
+          <svg class="chevron w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div class="section-content">
+          <div class="w-full mt-2 flex flex-col gap-4 justify-center items-center">
+            <p>Scene Editor</p>
+            <div id="sceneEditor" class="w-[calc(16*1.4vw)] h-[calc(9*1.4vw)]"></div>
+            <div class="mt-2 flex gap-2">
+              <div>
+                <input type="file" id="backgroundUpload" accept="image/*" class="hidden">
+                <button id="uploadBackground" class="bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-2 py-1 rounded">Upload Background</button>
+              </div>
+              <div>
+                <input type="file" id="spriteUpload" accept="image/*" class="hidden">
+                <button id="uploadSprite" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-2 py-1 rounded">Upload Sprite</button>
+              </div>
+            </div>
+            <div id="spriteList" class="mt-2 flex flex-wrap gap-2"></div>
+          </div>
+        </div>
+      </div>
     </div>
+    
     <div id="editItemModal" class="fixed left-0 top-0 w-1/3 h-screen bg-white bg-opacity-5 border-r border-[#343740] shadow-lg p-4 overflow-auto transform transition-all duration-300 hidden">
       <h2 class="text-xl font-bold mb-4">Edit Item</h2>
       <div class="mb-4">
@@ -74,27 +153,60 @@
       <div id="conditionsSection">
         <h3 class="font-bold">Conditions</h3>
         <div id="conditionsList" class="space-y-2 mt-2"></div>
-        <button id="addCondition" class="bg-blue-700  bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-2 py-1 rounded mt-2"> Add Condition </button>
+        <button id="addCondition" class="bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-2 py-1 rounded mt-2">Add Condition</button>
       </div>
       <div id="flagsSection" class="mt-4">
         <h3 class="font-bold">Flags</h3>
         <div id="flagsList" class="space-y-2 mt-2"></div>
-        <button id="addFlag" class="bg-blue-700  bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-2 py-1 rounded mt-2"> Add Flag </button>
+        <button id="addFlag" class="bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-2 py-1 rounded mt-2">Add Flag</button>
       </div>
       <div id="connectionSection" class="mt-4">
         <h3 class="font-bold">Connection</h3>
-        <button id="selectConnection" class="bg-blue-700  bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-2 py-1 rounded mt-2"> Select Node for Connection </button>
+        <button id="selectConnection" class="bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-2 py-1 rounded mt-2">Select Node for Connection</button>
         <div id="selectedConnection" class="mt-2 text-sm text-gray-600"></div>
       </div>
-      <button id="confirmItem" class="mt-4 bg-green-700  bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-4 py-2 rounded"> Confirm </button>
-      <button id="deleteItem" class="mt-4 bg-red-700  bg-opacity-50 hover:bg-opacity-100 transition border-red-700 border text-white px-4 py-2 rounded"> Delete </button>
+      <button id="confirmItem" class="mt-4 bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-4 py-2 rounded">Confirm</button>
+      <button id="deleteItem" class="mt-4 bg-red-700 bg-opacity-50 hover:bg-opacity-100 transition border-red-700 border text-white px-4 py-2 rounded">Delete</button>
     </div>
-    <button id="addNode" class="fixed bottom-4 left-4 bg-lime-700 bg-opacity-50 hover:bg-opacity-100 transition border-lime-700 border text-white px-4 py-2 rounded"> Add Dialogue </button>
+    <div id="spriteDetailModal" class="fixed right-1/4 top-0 w-1/3 h-screen bg-gray-900 text-white border-l border-[#343740] shadow-lg p-4 overflow-auto transform transition-all duration-300 hidden">
+      <h2 class="text-xl font-bold mb-4">Sprite Details</h2>
+      <div class="mb-4">
+        <label for="spriteFocusToggle" class="block text-sm font-medium mb-1">Focus</label>
+        <input id="spriteFocusToggle" type="checkbox" class="mr-2" />
+        <span>Sprite is focused (unfocused darkens sprite)</span>
+      </div>
+      <div class="mb-4">
+        <label for="spriteAnimClassInput" class="block text-sm font-medium mb-1">Animation Class</label>
+        <input id="spriteAnimClassInput" type="text" class="w-full p-2 bg-gray-800 border border-gray-600 rounded" placeholder="Enter animation class" />
+      </div>
+      <div class="mt-2 mb-2">
+        <h3 class="text-lg font-bold mb-2">SFX</h3>
+        <div id="spriteSfxList" class="space-y-2"></div>
+        <button id="addSpriteSfxBtn" class="mt-2 bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-2 py-1 rounded">Add SFX</button>
+      </div>
+      <div class="mt-4 flex gap-2">
+        <button id="saveSpriteDetailsBtn" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-2 py-1 rounded">Save</button>
+        <button id="closeSpriteDetailModal" class="bg-red-700 bg-opacity-50 hover:bg-opacity-100 transition border-red-700 border text-white px-2 py-1 rounded">Close</button>
+      </div>
+    </div>
+    <button id="addNode" class="fixed bottom-4 left-4 bg-lime-700 bg-opacity-50 hover:bg-opacity-100 transition border-lime-700 border text-white px-4 py-2 rounded">Add Dialogue</button>
     <div class="fixed bottom-4 right-4 flex space-x-2">
-      <button id="saveDB" class="bg-purple-700 bg-opacity-50 border border-purple-700 hover:bg-opacity-100 transition text-white px-4 py-2 rounded"> Save Database </button>
-      <button id="loadDB" class="bg-purple-700 bg-opacity-50 border border-purple-700 hover:bg-opacity-100 transition text-white px-4 py-2 rounded"> Load Database </button>
+      <button id="saveDB" class="bg-purple-700 bg-opacity-50 border border-purple-700 hover:bg-opacity-100 transition text-white px-4 py-2 rounded">Save Database</button>
+      <button id="loadDB" class="bg-purple-700 bg-opacity-50 border border-purple-700 hover:bg-opacity-100 transition text-white px-4 py-2 rounded">Load Database</button>
     </div>
     <input type="file" id="dbFileInput" class="hidden" />
     <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/sprite.js"></script>
+    
+    <script>
+      document.querySelectorAll('.section-header').forEach(header => {
+        header.addEventListener('click', () => {
+          const content = header.nextElementSibling;
+          content.classList.toggle('hidden');
+          const chevron = header.querySelector('.chevron');
+          chevron.classList.toggle('rotate-180');
+        });
+      });
+    </script>
   </body>
 </html>

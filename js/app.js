@@ -16,6 +16,9 @@ import {
 import {
   updateConnections
 } from "./connections.js";
+import {
+  commitSceneChangesToNodeData
+} from "./sprite.js";
 const $ = id => document.getElementById(id);
 let nodes = [],
   connections = [];
@@ -129,6 +132,8 @@ window.addEventListener("keyup", e => {
           nodes.forEach(n => n.element.classList.remove("border-2", "border-blue-500"));
           selectedNode = null;
           sidebar.classList.add("hidden");
+          commitSceneChangesToNodeData()
+          spriteDetailModal.classList.add('hidden');;
           editor.style.transform = "";
       }
   }
@@ -139,6 +144,8 @@ editor.addEventListener("click", e => {
       nodes.forEach(n => n.element.classList.remove("border-2", "border-blue-500"));
       selectedNode = null;
       sidebar.classList.add("hidden");
+      commitSceneChangesToNodeData()
+      spriteDetailModal.classList.add('hidden');;
       editor.style.transform = "";
   }
 });
@@ -207,6 +214,8 @@ selectConnectionBtn.addEventListener("click", () => {
   connectionSelectionMode = true;
   selectedConnectionDiv.textContent = "Click on a node to select as connection target...";
   sidebar.classList.add("hidden");
+  commitSceneChangesToNodeData()
+  spriteDetailModal.classList.add('hidden');;
   editItemModal.classList.add("hidden");
 });
 document.addEventListener("editItem", e => {
@@ -313,3 +322,16 @@ function animate() {
   requestAnimationFrame(animate);
 }
 requestAnimationFrame(animate);
+document.addEventListener("DOMContentLoaded", () => {
+  window.dialogueEditor = new EasyMDE({
+      element: document.getElementById("dialogueInput"),
+      toolbar: false,
+      autoDownloadFontAwesome: false,
+      spellChecker: false,
+  });
+  document.getElementById("speakerInput").addEventListener("input", (e) => {
+      if (window.selectedNodeData) {
+          window.selectedNodeData.speaker = e.target.value;
+      }
+  });
+});
