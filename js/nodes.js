@@ -144,3 +144,34 @@ export const selectNode = (node, sidebar, editor, nodes) => {
         behavior: "smooth"
     });
 };
+export const duplicateNode = (originalNodeData, editor, nodes, makeDraggableCallback) => {
+    const originalNodeRect = originalNodeData.element.getBoundingClientRect();
+    const offsetX = 50;
+    const offsetY = 50;
+    const x = originalNodeRect.left + window.scrollX + offsetX;
+    const y = originalNodeRect.top + window.scrollY + offsetY;
+    const newNodeData = createNode(x, y, editor, nodes, makeDraggableCallback, {
+        title: originalNodeData.element.querySelector('.font-semibold').textContent + " Copy"
+    });
+    newNodeData.dialogue = originalNodeData.dialogue;
+    newNodeData.speaker = originalNodeData.speaker;
+    newNodeData.scene.background = originalNodeData.scene.background;
+    newNodeData.scene.sprites = originalNodeData.scene.sprites.map(sprite => ({...sprite}));
+    originalNodeData.rows.forEach(originalRow => {
+        const itemDetails = {...originalRow.row.itemDetails};
+        createRow(newNodeData, itemDetails, document.getElementById('connections'), nodes, []);
+    });
+    originalNodeData.rows.forEach(originalRow => {
+        if (originalRow.row.itemDetails.connectionTarget) {
+            const targetNodeId = originalRow.row.itemDetails.connectionTarget;
+            const targetNode = nodes.find(n => n.id === targetNodeId);
+            if (targetNode) {
+                const newItemRow = newNodeData.rows.find(row => row.row.itemDetails.title === originalRow.row.itemDetails.title);
+                if (newItemRow) {
+                    newItemRow.row.itemDetails.connectionTarget = targetNodeId; 
+                }
+            }
+        }
+    });
+    return newNodeData;
+};

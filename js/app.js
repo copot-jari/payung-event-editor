@@ -19,6 +19,7 @@ import {
 import {
   commitSceneChangesToNodeData
 } from "./sprite.js";
+import { duplicateNode as duplicateNodeFn } from "./nodes.js";
 const $ = id => document.getElementById(id);
 let nodes = [],
   connections = [];
@@ -37,6 +38,7 @@ const editor = $("editor"),
   conditionsList = $("conditionsList"),
   addFlagBtn = $("addFlag"),
   flagsList = $("flagsList"),
+  duplicateNodeButton = $("duplicateNode"),
   selectConnectionBtn = $("selectConnection"),
   selectedConnectionDiv = $("selectedConnection"),
   confirmItemBtn = $("confirmItem"),
@@ -69,6 +71,14 @@ document.addEventListener("mouseup", () => {
       editor.style.cursor = "default";
   }
 });
+duplicateNodeButton.addEventListener("click", () => {
+    if (selectedNode) {
+        const selectedNodeData = nodes.find(n => n.element === selectedNode);
+        if (selectedNodeData) {
+            const newNodeData = duplicateNodeFn(selectedNodeData, editor, nodes, makeDraggable);
+            selectNode(newNodeData.element, sidebar, editor, nodes);
+        }
+}});
 saveDBButton.addEventListener("click", () => {
   saveStateToDB(dbInstance, nodes, connections);
   downloadDatabase(dbInstance);
