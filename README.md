@@ -14,6 +14,10 @@ A simple node editor module for payung event datatype. To be integrated with Pay
 Bugs and glitches:
 - [x] Focus outline does not dissapear sometimes
 - [x] Relational line is drawn incorrectly if zoom changes from default
+- [ ] Scene, dialogues et cetera is not saved when saving db
+- [ ] Sometimes the line goes off
+- [ ] Drag connection doesn't work
+- [ ] WHen a sprite is deleted it cannot be added back until two scenes is focued and unfocused
 
 ## Features
 Todo List:
@@ -21,11 +25,14 @@ Todo List:
 - [x] Flag requirement choices
 - [x] Load from SQLite
 - [x] Save to SQLite
-- [ ] Music player for event
-- [ ] Integrate with scene editor (upcoming)
+- [X] SFX For sprites
+- [X] Music player for event
+- [X] Integrate with scene editor (upcoming)
 - [x] Zoom In/Out for more working space
 - [x] Panning
 - [ ] Move event without choice
+- [ ] Color coded actor
+- [ ] Scene title
 - [ ] Flags gained
 - [ ] Flags remove
 - [ ] Item gain
