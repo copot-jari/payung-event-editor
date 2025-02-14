@@ -276,37 +276,97 @@ deleteItemBtn.addEventListener("click", () => {
   currentEditItem = null;
   selectNode(nodeData.element, sidebar, editor, nodes);
 });
-
 function loadStateFromDBToUI() {
   nodes = [];
   connections = [];
   editor.querySelectorAll("div.node").forEach(n => n.remove());
-  dbInstance.exec("SELECT * FROM nodes")[0]?.values.forEach(([id, x, y, title]) =>
-      createNode(x, y, editor, nodes, makeDraggable, {
+  sceneEditor.style.backgroundImage = 'none'; 
+  spriteList.innerHTML = ''; 
+  sceneEditor.querySelectorAll('.sprite').forEach(el => el.remove()); 
+  const nodeRows = dbInstance.exec("SELECT * FROM nodes")[0]?.values || [];
+  nodeRows.forEach(([id, x, y, title]) => {
+      const nodeData = createNode(x, y, editor, nodes, makeDraggable, {
           id,
           title
-      })
-  );
-  dbInstance.exec("SELECT * FROM items")[0]?.values.forEach(([itemId, nodeId, name, details]) => {
+      });
+      const sceneData = dbInstance.exec(`SELECT background_image, dialogue, speaker FROM scenes WHERE node_id = ?`, [id])[0]?.values?.[0];
+      if (sceneData) {
+          const [background_image, dialogue, speaker] = sceneData;
+          nodeData.scene.background = background_image || null;
+          nodeData.dialogue = dialogue || "";
+          nodeData.speaker = speaker || "";
+      }
+      const spriteRows = dbInstance.exec(`SELECT id, src, x, y, width, height, focus, animation_class FROM sprites WHERE scene_node_id = ?`, [id])[0]?.values || [];
+      spriteRows.forEach(([spriteId, src, spriteX, spriteY, width, height, focus, animation_class]) => {
+          const spriteDataObject = {
+              src,
+              x: spriteX,
+              y: spriteY,
+              width,
+              height,
+              focus: focus === 1, 
+              animationClass: animation_class || '',
+              sfx: []
+          };
+          const sfxRows = dbInstance.exec(`SELECT file_name, file_data, loop, auto, volume FROM sprite_sfx WHERE sprite_id = ?`, [spriteId])[0]?.values || [];
+          sfxRows.forEach(([file_name, file_data, loop, auto, volume]) => {
+              spriteDataObject.sfx.push({
+                  fileName: file_name,
+                  fileData: file_data,
+                  loop: loop === 1,
+                  auto: auto === 1,
+                  volume: volume
+              });
+          });
+          nodeData.scene.sprites.push(spriteDataObject); 
+      });
+  });
+  const itemRows = dbInstance.exec("SELECT id, node_id, title, connection_target_node_id FROM items")[0]?.values || [];
+  itemRows.forEach(([itemId, nodeId, title, connection_target_node_id]) => {
       const nodeData = nodes.find(n => n.id === nodeId);
       if (nodeData) {
-          const parsedDetails = details ? JSON.parse(details) : {};
-          createRow(nodeData, parsedDetails, svg, nodes, connections);
+          const itemDetails = {
+              title: title || `Choice ${itemId}`,
+              connectionTarget: connection_target_node_id || null,
+              conditions: [],
+              flags: []
+          };
+          const conditionRows = dbInstance.exec(`SELECT variable, operator, value FROM conditions WHERE item_id = ?`, [itemId])[0]?.values || [];
+          conditionRows.forEach(([variable, operator, value]) => {
+              itemDetails.conditions.push({
+                  variable,
+                  operator,
+                  value
+              });
+          });
+          const flagRows = dbInstance.exec(`SELECT flag_name, value FROM flags WHERE item_id = ?`, [itemId])[0]?.values || [];
+          flagRows.forEach(([flag_name, value]) => {
+              itemDetails.flags.push({
+                  flagName: flag_name,
+                  value: value === 1 
+              });
+          });
+          createRow(nodeData, itemDetails, svg, nodes, connections);
           const lastRow = nodeData.rows[nodeData.rows.length - 1];
-          lastRow.row.dataset.itemId = itemId;
+          lastRow.row.dataset.itemId = itemId; 
       }
   });
-  dbInstance.exec("SELECT * FROM connections")[0]?.values.forEach(([connId, fromNodeId, fromItemId, toNodeId]) => {
+  const connectionRows = dbInstance.exec("SELECT from_node_id, from_item_id, to_node_id FROM connections")[0]?.values || [];
+  connectionRows.forEach(([fromNodeId, fromItemId, toNodeId]) => {
       const fromNode = nodes.find(n => n.id === fromNodeId);
       if (!fromNode) return;
-      const fromRow = fromNode.rows.find(r => r.row.dataset.itemId === fromItemId);
+      const fromRow = fromNode.rows.find(r => r.itemId === fromItemId);
       if (!fromRow) return;
       const targetNode = nodes.find(n => n.id === toNodeId);
       if (!targetNode) return;
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("stroke", "white");
+      line.setAttribute("stroke-width", "2");
+      svg.appendChild(line);
       connections.push({
           from: {
               nodeId: fromNodeId,
-              itemId: fromRow.row.dataset.itemId
+              itemId: fromItemId
           },
           to: {
               nodeId: toNodeId
@@ -314,9 +374,9 @@ function loadStateFromDBToUI() {
           line
       });
   });
-  updateConnections(nodes, connections);
+  updateConnections(nodes, connections); 
+  console.log("State loaded from database with new schema.");
 }
-
 function animate() {
   updateConnections(nodes, connections);
   requestAnimationFrame(animate);
