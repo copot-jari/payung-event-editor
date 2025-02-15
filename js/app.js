@@ -388,17 +388,27 @@ function loadStateFromDBToUI() {
   nodeRows.forEach(([id, x, y, title]) => {
       const nodeData = createNode(x, y, editor, nodes, makeDraggable, {
           id,
-          title: title || uiConfig.defaultNodeTitle 
+          title: title || uiConfig.defaultNodeTitle
       });
-      const sceneData = dbInstance.exec(`SELECT background_image, dialogue, speaker FROM scenes WHERE node_id = ?`, [id])[0]?.values?.[0];
+      const sceneData = dbInstance.exec(`SELECT background_file_id, dialogue, speaker FROM scenes WHERE node_id = ?`, [id])[0]?.values?.[0];
       if (sceneData) {
-          const [background_image, dialogue, speaker] = sceneData;
-          nodeData.scene.background = background_image || null;
+          const [background_file_id, dialogue, speaker] = sceneData;
+          let background_image = null;
+          if (background_file_id) {
+              const fileData = dbInstance.exec(`SELECT base64_data FROM files WHERE id = ?`, [background_file_id])[0]?.values?.[0]?.[0];
+              background_image = fileData || null;
+          }
+          nodeData.scene.background = background_image;
           nodeData.dialogue = dialogue || "";
           nodeData.speaker = speaker || "";
       }
-      const spriteRows = dbInstance.exec(`SELECT id, src, x, y, width, height, focus, animation_class, continuity_id FROM sprites WHERE scene_node_id = ?`, [id])[0]?.values || [];
-      spriteRows.forEach(([spriteId, src, spriteX, spriteY, width, height, focus, animation_class, continuity_id]) => {
+      const spriteRows = dbInstance.exec(`SELECT id, file_id, x, y, width, height, focus, animation_class, continuity_id FROM sprites WHERE scene_node_id = ?`, [id])[0]?.values || [];
+      spriteRows.forEach(([spriteId, file_id, spriteX, spriteY, width, height, focus, animation_class, continuity_id]) => {
+          let src = null;
+          if (file_id) {
+              const fileData = dbInstance.exec(`SELECT base64_data FROM files WHERE id = ?`, [file_id])[0]?.values?.[0]?.[0];
+              src = fileData || null;
+          }
           const spriteDataObject = {
               src,
               x: spriteX,
@@ -410,8 +420,13 @@ function loadStateFromDBToUI() {
               continuityIdentifier: continuity_id || '',
               sfx: []
           };
-          const sfxRows = dbInstance.exec(`SELECT file_name, file_data, loop, auto, volume FROM sprite_sfx WHERE sprite_id = ?`, [spriteId])[0]?.values || [];
-          sfxRows.forEach(([file_name, file_data, loop, auto, volume]) => {
+          const sfxRows = dbInstance.exec(`SELECT file_name, file_id, loop, auto, volume FROM sprite_sfx WHERE sprite_id = ?`, [spriteId])[0]?.values || [];
+          sfxRows.forEach(([file_name, file_id, loop, auto, volume]) => {
+              let file_data = null;
+              if (file_id) {
+                  const fileData = dbInstance.exec(`SELECT base64_data FROM files WHERE id = ?`, [file_id])[0]?.values?.[0]?.[0];
+                  file_data = fileData || null;
+              }
               spriteDataObject.sfx.push({
                   fileName: file_name,
                   fileData: file_data,
@@ -428,7 +443,7 @@ function loadStateFromDBToUI() {
       const nodeData = nodes.find(n => n.id === nodeId);
       if (nodeData) {
           const itemDetails = {
-              title: title || `${uiConfig.text.defaultItemTitlePrefix}${itemId}`, 
+              title: title || `${uiConfig.text.defaultItemTitlePrefix}${itemId}`,
               connectionTarget: connection_target_node_id || null,
               conditions: [],
               flags: []
@@ -477,7 +492,7 @@ function loadStateFromDBToUI() {
       });
   });
   updateConnections(nodes, connections);
-  console.log("State loaded from database with new schema.");
+  console.log("State loaded from database with optimized schema (base64 data loaded from files table).");
 }
 
 function animate() {
