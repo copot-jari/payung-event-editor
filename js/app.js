@@ -37,7 +37,6 @@ const uiConfig = {
       addFlagButton: "addFlag",
       flagsList: "flagsList",
       duplicateNodeButton: "duplicateNode",
-      selectConnectionButton: "selectConnection",
       selectedConnectionDiv: "selectedConnection",
       confirmItemButton: "confirmItem",
       deleteItemButton: "deleteItem",
@@ -101,7 +100,6 @@ const editor = $(uiConfig.selectors.editor),
   addFlagBtn = $(uiConfig.selectors.addFlagButton),
   flagsList = $(uiConfig.selectors.flagsList),
   duplicateNodeButton = $(uiConfig.selectors.duplicateNodeButton),
-  selectConnectionBtn = $(uiConfig.selectors.selectConnectionButton),
   selectedConnectionDiv = $(uiConfig.selectors.selectedConnectionDiv),
   confirmItemBtn = $(uiConfig.selectors.confirmItemButton),
   deleteItemBtn = $(uiConfig.selectors.deleteItemButton),
@@ -305,15 +303,6 @@ addItemButton.addEventListener("click", () => {
 addConditionBtn.addEventListener("click", () => conditionsList.appendChild(buildConditionRow()));
 
 addFlagBtn.addEventListener("click", () => flagsList.appendChild(buildFlagRow()));
-
-selectConnectionBtn.addEventListener("click", () => {
-  connectionSelectionMode = true;
-  selectedConnectionDiv.textContent = uiConfig.text.selectConnectionTargetPrompt;
-  commitSceneChangesToNodeData()
-  sidebar.classList.add(uiConfig.classes.hidden);
-  spriteDetailModal.classList.add(uiConfig.classes.hidden);;
-  editItemModal.classList.add(uiConfig.classes.hidden);
-});
 
 document.addEventListener(uiConfig.events.editItem, e => {
   console.log("Editing It")
