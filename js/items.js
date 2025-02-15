@@ -20,6 +20,84 @@ export function createRow(nodeData, details = {}, svg, nodes, connections) {
         row,
         outConnector
     });
+
+    let isDraggingConnection = false;
+    let tempLine = null;
+    let dragStartConnector = null;
+
+    outConnector.addEventListener('mousedown', (e) => {
+        e.stopPropagation(); 
+        isDraggingConnection = true;
+        dragStartConnector = outConnector;
+        tempLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        const rect = outConnector.getBoundingClientRect();
+        const scrollX = window.scrollX; 
+        const scrollY = window.scrollY; 
+        const startX = rect.left + rect.width / 2;
+        const startY = rect.top + rect.height / 2;
+        tempLine.setAttribute("x1", scrollX + startX);
+        tempLine.setAttribute("y1", scrollY + startY);
+        tempLine.setAttribute("x2", scrollX +  startX);
+        tempLine.setAttribute("y2", scrollY + startY);
+        tempLine.setAttribute("stroke", "white");
+        tempLine.setAttribute("stroke-width", "2");
+        svg.appendChild(tempLine);
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    });
+
+    const handleMouseMove = (e) => {
+        if (!isDraggingConnection) return;
+        const scrollX = window.scrollX; 
+        const scrollY = window.scrollY; 
+        tempLine.setAttribute("x2", scrollX + e.clientX);
+        tempLine.setAttribute("y2", scrollY + e.clientY);
+    };
+
+    const handleMouseUp = (e) => {
+        if (!isDraggingConnection) return;
+        isDraggingConnection = false;
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+
+        const endElement = document.elementFromPoint(e.clientX, e.clientY);
+        if (endElement && endElement.classList.contains('node-input-connector')) {
+            const targetNodeElement = endElement.closest('.node');
+            if (targetNodeElement && node !== targetNodeElement) {
+                const targetNodeData = nodes.find(n => n.element === targetNodeElement);
+                if (targetNodeData) {
+                    details.connectionTarget = targetNodeData.id;
+                    if (details.connectionTarget) {
+                        const targetNode = nodes.find(n => n.id === details.connectionTarget);
+                        if (targetNode) {
+                            const rect = outConnector.getBoundingClientRect();
+                            const startX = rect.left + rect.width / 2;
+                            const startY = rect.top + rect.height / 2;
+                            const targetRect = targetNode.inputConnector.getBoundingClientRect();
+                            const endX = targetRect.left + targetRect.width / 2;
+                            const endY = targetRect.top + targetRect.height / 2;
+                            tempLine.setAttribute("x2", endX);
+                            tempLine.setAttribute("y2", endY); 
+                            connections.push({
+                                from: {
+                                    nodeId: nodeData.id,
+                                    itemId: row.dataset.itemId
+                                },
+                                to: {
+                                    nodeId: details.connectionTarget
+                                },
+                                line: tempLine 
+                            });
+                            return; 
+                        }
+                    }
+                }
+            }
+        }
+        svg.removeChild(tempLine); 
+    };
+
+
     if (details.connectionTarget) {
         const targetNode = nodes.find(n => n.id === details.connectionTarget);
         if (targetNode) {
