@@ -206,6 +206,7 @@ window.addEventListener("keyup", e => {
           selectedNode = null;
           commitSceneChangesToNodeData()
           sidebar.classList.add(uiConfig.classes.hidden);
+          editItemModal.classList.add(uiConfig.classes.hidden);
           spriteDetailModal.classList.add(uiConfig.classes.hidden);;
           editor.style.transform = "";
       }
@@ -217,9 +218,10 @@ editor.addEventListener(uiConfig.events.updateConnection, () => updateConnection
 editor.addEventListener("click", e => {
   if (e.target === editor) {
       nodes.forEach(n => n.element.classList.remove(uiConfig.classes.nodeSelectedBorder, uiConfig.classes.nodeSelectedBorderColor));
-      selectedNode = null;
       commitSceneChangesToNodeData()
+      selectedNode = null;
       sidebar.classList.add(uiConfig.classes.hidden);
+      editItemModal.classList.add(uiConfig.classes.hidden);
       spriteDetailModal.classList.add(uiConfig.classes.hidden);;
       editor.style.transform = "";
   }
