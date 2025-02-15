@@ -287,6 +287,7 @@ export function loadSceneForNode(nodeData) {
 export function commitSceneChangesToNodeData() {
     if (!window.selectedNodeData) return;
     window.selectedNodeData.dialogue = window.dialogueEditor.value();
+    window.selectedNodeDOM.querySelector("div.font-semibold").textContent = `${window.selectedNodeData.speaker} - ${window.selectedNodeData.dialogue}`
     const bgImage = sceneEditor.style.backgroundImage;
     const match = bgImage && bgImage.match(/url\("?(.*?)"?\)/);
     window.selectedNodeData.scene.background = match ? match[1] : null;

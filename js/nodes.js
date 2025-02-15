@@ -27,7 +27,7 @@
         node.dataset.id = id;
         createEl("div", {
             props: {
-                className: "font-semibold mb-2 text-white",
+                className: "font-semibold truncate mb-2 text-white",
                 textContent: config.title || "Untitled"
             }
         }, node);
@@ -106,6 +106,7 @@
         });
     };
     export const selectNode = (node, sidebar, editor, nodes) => {
+        window.selectedNodeDOM = node;
         nodes.forEach(n => n.element.classList.remove("border-2", "border-blue-500"));
         node.classList.add("border-2", "border-blue-500");
         sidebar.classList.remove("hidden");
