@@ -37,7 +37,6 @@ const uiConfig = {
       addFlagButton: "addFlag",
       flagsList: "flagsList",
       duplicateNodeButton: "duplicateNode",
-      selectedConnectionDiv: "selectedConnection",
       confirmItemButton: "confirmItem",
       deleteItemButton: "deleteItem",
       saveDBButton: "saveDB",
@@ -100,7 +99,6 @@ const editor = $(uiConfig.selectors.editor),
   addFlagBtn = $(uiConfig.selectors.addFlagButton),
   flagsList = $(uiConfig.selectors.flagsList),
   duplicateNodeButton = $(uiConfig.selectors.duplicateNodeButton),
-  selectedConnectionDiv = $(uiConfig.selectors.selectedConnectionDiv),
   confirmItemBtn = $(uiConfig.selectors.confirmItemButton),
   deleteItemBtn = $(uiConfig.selectors.deleteItemButton),
   saveDBButton = $(uiConfig.selectors.saveDBButton),
@@ -196,17 +194,6 @@ editor.addEventListener(uiConfig.events.nodeSelected, e => {
   selectNode(selectedNode, sidebar, editor, nodes);
 });
 
-editor.addEventListener(uiConfig.events.nodeToConnect, e => {
-  selectedNode = e.detail.node;
-  if (connectionSelectionMode) {
-      selectedConnectionTarget = selectedNode.dataset.id;
-      selectedConnectionDiv.textContent = uiConfig.text.selectedConnectionPrefix + selectedNode.querySelector(uiConfig.selectors.nodeTitleSelectorInNode).textContent;
-      sidebar.classList.remove(uiConfig.classes.hidden);
-      editItemModal.classList.remove(uiConfig.classes.hidden);
-      connectionSelectionMode = false;
-  }
-});
-
 window.addEventListener("keyup", e => {
   if (e.key === "Escape") {
       if (connectionSelectionMode) {
@@ -291,7 +278,6 @@ addItemButton.addEventListener("click", () => {
   editor.style.transform = "";
   conditionsList.innerHTML = "";
   flagsList.innerHTML = "";
-  selectedConnectionDiv.textContent = "";
   selectedConnectionTarget = null;
   itemTitleInput.value = "";
   editItemModal.classList.remove(uiConfig.classes.hidden);
