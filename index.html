@@ -98,7 +98,12 @@
     </div>
     
     <div id="sidebar" class="fixed right-0 top-0 w-1/4 h-screen bg-white backdrop-blur-3xl bg-opacity-5 border-l border-[#343740] shadow-lg p-4 overflow-auto transform transition-all duration-300 hidden">
-      <h2 id="nodeTitle" class="text-xl truncate font-bold mb-4"></h2>
+      
+      <div class="flex gap-3 justify-between">
+        <h2 id="nodeTitle" class="text-xl truncate font-bold mb-4"></h2>
+        <button id="duplicateNode" class="bg-orange-700 bg-opacity-50 hover:bg-opacity-100 transition border-orange-700 border text-white px-4 py-2 rounded">Duplicate Node</button>
+
+      </div>
       
       <div class="collapsible-section">
         <button type="button" class="section-header flex justify-between items-center w-full text-left text-lg font-bold mb-2">
@@ -191,7 +196,6 @@
     <button id="addNode" class="fixed bottom-4 left-4 bg-lime-700 bg-opacity-50 hover:bg-opacity-100 transition border-lime-700 border text-white px-4 py-2 rounded">Add Dialogue</button>
     <div id="rightButtonContainer" class="fixed bottom-4 right-4 flex space-x-2">
       <div class="flex space-x-2">
-        <button id="duplicateNode" class="bg-orange-700 bg-opacity-50 hover:bg-opacity-100 transition border-orange-700 border text-white px-4 py-2 rounded">Duplicate Node</button>
         <button id="saveDB" class="bg-purple-700 bg-opacity-50 border border-purple-700 hover:bg-opacity-100 transition text-white px-4 py-2 rounded">Save Database</button>
       </div>
       <button id="loadDB" class="bg-purple-700 bg-opacity-50 border border-purple-700 hover:bg-opacity-100 transition text-white px-4 py-2 rounded">Load Database</button>
