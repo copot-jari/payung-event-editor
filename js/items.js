@@ -60,7 +60,8 @@ export function createRow(nodeData, details = {}, svg, nodes, connections, prevI
         document.removeEventListener('mouseup', handleMouseUp);
 
         const endElement = document.elementFromPoint(e.clientX, e.clientY);
-        if (endElement && endElement.classList.contains('node-input-connector')) {
+        if (endElement && endElement.classList.contains('node-input-connector') || endElement && endElement.classList.contains('node') || endElement && endElement.parentElement.classList.contains('node')) {
+            console.log(endElement)
             const targetNodeElement = endElement.closest('.node');
             if (targetNodeElement && node !== targetNodeElement) {
                 const targetNodeData = nodes.find(n => n.element === targetNodeElement);

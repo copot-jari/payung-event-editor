@@ -293,6 +293,12 @@ document.addEventListener(uiConfig.events.editItem, e => {
       row
   } = e.detail;
   console.log(row.dataset)
+  let old = connections.filter(e => e.from.itemId == row.dataset.itemId)
+  if (old.length > 0) {
+      old = old[0]
+      $("connections").removeChild(old.line)
+      connections.splice(connections.indexOf(old), 1)
+  }
   conditionsList.innerHTML = "";
   flagsList.innerHTML = "";
   itemTitleInput.value = row.itemDetails?.title || "";
