@@ -315,6 +315,7 @@ document.addEventListener(uiConfig.events.editItem, e => {
 });
 
 confirmItemBtn.addEventListener("click", () => {
+  commitSceneChangesToNodeData()
   if (!currentEditItem) return;
   const nodeData = nodes.find(n => n.id === currentEditItem.nodeId);
   if (!nodeData) return;
