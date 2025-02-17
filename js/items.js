@@ -4,7 +4,7 @@ export function createRow(nodeData, details = {}, svg, nodes, connections, prevI
     row.className = "flex items-center justify-between border gap-2 bg-[#030712] border-[#343740] p-1 rounded";
     row.dataset.itemId = prevId || crypto.randomUUID();;
     const content = document.createElement("div");
-    content.textContent = details.title || "Choice " + row.dataset.itemId;
+    content.textContent = details.title || "PRE_CONT";
     content.className = "truncate"
     attachEditButton(row);
     enableItemEditing(row);

@@ -21,7 +21,7 @@ import {
   commitSceneChangesToNodeData
 } from "./sprite.js";
 
-const $ = id => document.getElementById(id);
+export const $ = id => document.getElementById(id);
 
 
 const uiConfig = {
@@ -196,34 +196,27 @@ editor.addEventListener(uiConfig.events.nodeSelected, e => {
 
 window.addEventListener("keyup", e => {
   if (e.key === "Escape") {
-      if (connectionSelectionMode) {
-          commitSceneChangesToNodeData()
-          sidebar.classList.remove(uiConfig.classes.hidden);
-          editItemModal.classList.remove(uiConfig.classes.hidden);
-          connectionSelectionMode = false;
-      } else if (selectedNode != null) {
-          nodes.forEach(n => n.element.classList.remove(uiConfig.classes.nodeSelectedBorder, uiConfig.classes.nodeSelectedBorderColor));
-          selectedNode = null;
-          commitSceneChangesToNodeData()
-          sidebar.classList.add(uiConfig.classes.hidden);
-          editItemModal.classList.add(uiConfig.classes.hidden);
-          spriteDetailModal.classList.add(uiConfig.classes.hidden);;
-          editor.style.transform = "";
-      }
+    closeSidebar()
   }
 });
+
+function closeSidebar() {
+  nodes.forEach(n => n.element.classList.remove(uiConfig.classes.nodeSelectedBorder, uiConfig.classes.nodeSelectedBorderColor));
+  commitSceneChangesToNodeData()
+  selectedNode = null;
+  sidebar.classList.add(uiConfig.classes.hidden);
+  editItemModal.classList.add(uiConfig.classes.hidden);
+  spriteDetailModal.classList.add(uiConfig.classes.hidden);
+  editor.style.transform = "";
+  $('rightButtonContainer').classList.remove("hidden")
+  
+}
 
 editor.addEventListener(uiConfig.events.updateConnection, () => updateConnections(nodes, connections));
 
 editor.addEventListener("click", e => {
   if (e.target === editor) {
-      nodes.forEach(n => n.element.classList.remove(uiConfig.classes.nodeSelectedBorder, uiConfig.classes.nodeSelectedBorderColor));
-      commitSceneChangesToNodeData()
-      selectedNode = null;
-      sidebar.classList.add(uiConfig.classes.hidden);
-      editItemModal.classList.add(uiConfig.classes.hidden);
-      spriteDetailModal.classList.add(uiConfig.classes.hidden);;
-      editor.style.transform = "";
+    closeSidebar()
   }
 });
 

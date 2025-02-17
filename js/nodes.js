@@ -1,4 +1,5 @@
-    import { createRow } from "./items.js";
+    import { $ } from "./app.js";
+import { createRow } from "./items.js";
     import {
         loadSceneForNode
     } from "./sprite.js";
@@ -106,6 +107,7 @@
         });
     };
     export const selectNode = (node, sidebar, editor, nodes) => {
+        $('rightButtonContainer').classList.add("hidden")
         window.selectedNodeDOM = node;
         nodes.forEach(n => n.element.classList.remove("border-2", "border-blue-500"));
         node.classList.add("border-2", "border-blue-500");
