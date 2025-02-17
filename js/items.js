@@ -5,6 +5,7 @@ export function createRow(nodeData, details = {}, svg, nodes, connections, prevI
     row.dataset.itemId = prevId || crypto.randomUUID();;
     const content = document.createElement("div");
     content.textContent = details.title || "PRE_CONT";
+    details.title = "PRE_CONT"
     content.className = "truncate"
     attachEditButton(row);
     enableItemEditing(row);
