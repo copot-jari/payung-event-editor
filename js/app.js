@@ -189,8 +189,10 @@ window.addEventListener("load", () => {
 });
 
 editor.addEventListener(uiConfig.events.nodeSelected, e => {
+  if (connectionSelectionMode || !sidebar.classList.contains(uiConfig.classes.hidden)) {
+    closeSidebar()
+  }
   selectedNode = e.detail.node;
-  if (connectionSelectionMode || !sidebar.classList.contains(uiConfig.classes.hidden)) return
   selectNode(selectedNode, sidebar, editor, nodes);
 });
 
