@@ -297,6 +297,7 @@ document.addEventListener(uiConfig.events.editItem, e => {
   const {
       row
   } = e.detail;
+  console.log(row.dataset)
   conditionsList.innerHTML = "";
   flagsList.innerHTML = "";
   itemTitleInput.value = row.itemDetails?.title || "";
@@ -338,7 +339,8 @@ confirmItemBtn.addEventListener("click", () => {
       flags,
       connectionTarget: selectedConnectionTarget
   };
-  createRow(nodeData, details, svg, nodes, connections);
+  console.log(currentEditItem)
+  createRow(nodeData, details, svg, nodes, connections, currentEditItem.itemDetails ? currentEditItem.itemDetails.itemId : null);
   editItemModal.classList.add(uiConfig.classes.hidden);
   currentEditItem = null;
   selectNode(nodeData.element, sidebar, editor, nodes);
@@ -354,9 +356,14 @@ deleteItemBtn.addEventListener("click", () => {
   selectNode(nodeData.element, sidebar, editor, nodes);
 });
 
-function loadStateFromDBToUI() {
+async function loadStateFromDBToUI() {
+  console.log(connections)
+  connections = []
+  const connection = $('connections');
+  while (connection.firstChild) {
+    connection.removeChild(connection.lastChild);
+  }
   nodes = [];
-  connections = [];
   editor.querySelectorAll(uiConfig.selectors.nodeElementSelector).forEach(n => n.remove());
   sceneEditor.style.backgroundImage = 'none';
   spriteList.innerHTML = '';
@@ -440,33 +447,11 @@ function loadStateFromDBToUI() {
                   value: value === 1
               });
           });
-          createRow(nodeData, itemDetails, svg, nodes, connections);
+          console.log(connections)
+          createRow(nodeData, itemDetails, svg, nodes, connections, itemId);
           const lastRow = nodeData.rows[nodeData.rows.length - 1];
           lastRow.row.dataset.itemId = itemId;
       }
-  });
-  const connectionRows = dbInstance.exec("SELECT from_node_id, from_item_id, to_node_id FROM connections")[0]?.values || [];
-  connectionRows.forEach(([fromNodeId, fromItemId, toNodeId]) => {
-      const fromNode = nodes.find(n => n.id === fromNodeId);
-      if (!fromNode) return;
-      const fromRow = fromNode.rows.find(r => r.itemId === fromItemId);
-      if (!fromRow) return;
-      const targetNode = nodes.find(n => n.id === toNodeId);
-      if (!targetNode) return;
-      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      line.setAttribute("stroke", "white");
-      line.setAttribute("stroke-width", "2");
-      svg.appendChild(line);
-      connections.push({
-          from: {
-              nodeId: fromNodeId,
-              itemId: fromItemId
-          },
-          to: {
-              nodeId: toNodeId
-          },
-          line
-      });
   });
   updateConnections(nodes, connections);
   console.log("State loaded from database with optimized schema (base64 data loaded from files table).");

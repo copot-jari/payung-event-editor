@@ -1,9 +1,8 @@
-let itemIdCounter = 0;
-export function createRow(nodeData, details = {}, svg, nodes, connections) {
+export function createRow(nodeData, details = {}, svg, nodes, connections, prevId) {
     const node = nodeData.element;
     const row = document.createElement("div");
     row.className = "flex items-center justify-between border gap-2 bg-[#030712] border-[#343740] p-1 rounded";
-    row.dataset.itemId = "item-" + itemIdCounter++;
+    row.dataset.itemId = prevId || crypto.randomUUID();;
     const content = document.createElement("div");
     content.textContent = details.title || "Choice " + row.dataset.itemId;
     content.className = "truncate"
@@ -68,16 +67,25 @@ export function createRow(nodeData, details = {}, svg, nodes, connections) {
                 if (targetNodeData) {
                     details.connectionTarget = targetNodeData.id;
                     if (details.connectionTarget) {
+                        console.log(details.connectionTarget)
                         const targetNode = nodes.find(n => n.id === details.connectionTarget);
                         if (targetNode) {
+                            console.log(targetNode)
                             const rect = outConnector.getBoundingClientRect();
                             const startX = rect.left + rect.width / 2;
                             const startY = rect.top + rect.height / 2;
                             const targetRect = targetNode.inputConnector.getBoundingClientRect();
+                            console.log(targetRect)
                             const endX = targetRect.left + targetRect.width / 2;
                             const endY = targetRect.top + targetRect.height / 2;
                             tempLine.setAttribute("x2", endX);
                             tempLine.setAttribute("y2", endY); 
+                            let old = connections.filter(e => e.from.itemId == row.dataset.itemId)
+                            if (old.length > 0) {
+                                old = old[0]
+                                svg.removeChild(old.line)
+                                connections.splice(connections.indexOf(old), 1)
+                            }
                             connections.push({
                                 from: {
                                     nodeId: nodeData.id,
@@ -88,6 +96,7 @@ export function createRow(nodeData, details = {}, svg, nodes, connections) {
                                 },
                                 line: tempLine 
                             });
+                            console.log(connections)
                             return; 
                         }
                     }

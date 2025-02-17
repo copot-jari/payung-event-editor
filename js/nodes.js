@@ -159,21 +159,21 @@
         newNodeData.speaker = originalNodeData.speaker;
         newNodeData.scene.background = originalNodeData.scene.background;
         newNodeData.scene.sprites = originalNodeData.scene.sprites.map(sprite => ({...sprite}));
-        originalNodeData.rows.forEach(originalRow => {
-            const itemDetails = {...originalRow.row.itemDetails};
-            createRow(newNodeData, itemDetails, document.getElementById('connections'), nodes, []);
-        });
-        originalNodeData.rows.forEach(originalRow => {
-            if (originalRow.row.itemDetails.connectionTarget) {
-                const targetNodeId = originalRow.row.itemDetails.connectionTarget;
-                const targetNode = nodes.find(n => n.id === targetNodeId);
-                if (targetNode) {
-                    const newItemRow = newNodeData.rows.find(row => row.row.itemDetails.title === originalRow.row.itemDetails.title);
-                    if (newItemRow) {
-                        newItemRow.row.itemDetails.connectionTarget = targetNodeId; 
-                    }
-                }
-            }
-        });
+        // originalNodeData.rows.forEach(originalRow => {
+        //     const itemDetails = {...originalRow.row.itemDetails};
+        //     createRow(newNodeData, itemDetails, document.getElementById('connections'), nodes, []);
+        // });
+        // originalNodeData.rows.forEach(originalRow => {
+        //     if (originalRow.row.itemDetails.connectionTarget) {
+        //         const targetNodeId = originalRow.row.itemDetails.connectionTarget;
+        //         const targetNode = nodes.find(n => n.id === targetNodeId);
+        //         if (targetNode) {
+        //             const newItemRow = newNodeData.rows.find(row => row.row.itemDetails.title === originalRow.row.itemDetails.title);
+        //             if (newItemRow) {
+        //                 newItemRow.row.itemDetails.connectionTarget = targetNodeId; 
+        //             }
+        //         }
+        //     }
+        // });
         return newNodeData;
     };
