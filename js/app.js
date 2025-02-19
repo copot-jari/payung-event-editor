@@ -1,30 +1,7 @@
-import {
-  initDatabase,
-  saveStateToDB,
-  downloadDatabase,
-  loadDatabaseFile
-} from "./database.js";
-import {
-  createNode,
-  makeDraggable,
-  selectNode,
-  duplicateNode as duplicateNodeFn
-} from "./nodes.js";
-import {
-  createRow,
-  removeRow
-} from "./items.js";
-import {
-  updateConnections
-} from "./connections.js";
-import {
-  commitSceneChangesToNodeData
-} from "./sprite.js";
 
 export const $ = id => document.getElementById(id);
 
-
-const uiConfig = {
+export const uiConfig = {
   selectors: {
       editor: "editor",
       connectionsSVG: "connections",
@@ -48,7 +25,11 @@ const uiConfig = {
       conditionRowInputsSelector: "input, select",
       flagRowInputsSelector: "input",
       dialogueInput: "dialogueInput",
-      speakerInput: "speakerInput"
+      speakerInput: "speakerInput",
+      deleteNodeButtonSidebar: 'deleteNodeButtonSidebar', 
+      deleteNodeModal: 'deleteNodeModal', 
+      confirmDeleteNodeButton: 'confirmDeleteNode', 
+      cancelDeleteNodeButton: 'cancelDeleteNode', 
   },
   classes: {
       hidden: "hidden",
@@ -80,15 +61,16 @@ const uiConfig = {
   defaultNodeTitle: "Untitled" 
 };
 
-let nodes = [],
-  connections = [];
-let selectedNode = null,
-  currentEditItem = null,
+window.nodes = []
+window.selectedNode = null
+
+export let connections = [];
+let currentEditItem = null,
   connectionSelectionMode = false,
   selectedConnectionTarget = null;
 let dbInstance = null;
 
-const editor = $(uiConfig.selectors.editor),
+export const editor = $(uiConfig.selectors.editor),
   svg = $(uiConfig.selectors.connectionsSVG),
   sidebar = $(uiConfig.selectors.sidebar),
   addItemButton = $(uiConfig.selectors.addItemButton),
@@ -104,7 +86,33 @@ const editor = $(uiConfig.selectors.editor),
   saveDBButton = $(uiConfig.selectors.saveDBButton),
   loadDBButton = $(uiConfig.selectors.loadDBButton),
   dbFileInput = $(uiConfig.selectors.dbFileInput),
-  itemTitleInput = $(uiConfig.selectors.itemTitleInput);
+  itemTitleInput = $(uiConfig.selectors.itemTitleInput),
+  spriteDetailModal = $('spriteDetailModal');
+
+import {
+  initDatabase,
+  saveStateToDB,
+  downloadDatabase,
+  loadDatabaseFile
+} from "./database.js";
+import {
+  createNode,
+  makeDraggable,
+  selectNode,
+  duplicateNode as duplicateNodeFn
+} from "./nodes.js";
+import {
+  createRow,
+  removeRow
+} from "./items.js";
+import {
+  updateConnections
+} from "./connections.js";
+import {
+  commitSceneChangesToNodeData
+} from "./sprite.js";
+import { closeSidebar, iniializeSidebar } from "./sidebar.js";
+  
 
 let isPanning = false;
 let panStartX, panStartY, initialScrollX, initialScrollY;
@@ -135,18 +143,10 @@ document.addEventListener("mouseup", () => {
   }
 });
 
-duplicateNodeButton.addEventListener("click", () => {
-  if (selectedNode) {
-      const selectedNodeData = nodes.find(n => n.element === selectedNode);
-      if (selectedNodeData) {
-          const newNodeData = duplicateNodeFn(selectedNodeData, editor, nodes, makeDraggable);
-          selectNode(newNodeData.element, sidebar, editor, nodes);
-      }
-  }
-});
+
 
 saveDBButton.addEventListener("click", () => {
-  saveStateToDB(dbInstance, nodes, connections);
+  saveStateToDB(dbInstance, connections);
   downloadDatabase(dbInstance);
 });
 
@@ -168,7 +168,7 @@ addNodeButton.addEventListener("click", () => {
   const editorAbsY = editorRect.top + window.pageYOffset;
   const x = screenCenterX - editorAbsX;
   const y = screenCenterY - editorAbsY;
-  createNode(x, y, editor, nodes, makeDraggable);
+  createNode(x, y, editor, makeDraggable);
 });
 
 window.addEventListener("load", () => {
@@ -192,8 +192,7 @@ editor.addEventListener(uiConfig.events.nodeSelected, e => {
   if (connectionSelectionMode || !sidebar.classList.contains(uiConfig.classes.hidden)) {
     closeSidebar()
   }
-  selectedNode = e.detail.node;
-  selectNode(selectedNode, sidebar, editor, nodes);
+  selectNode(e.detail.node);
 });
 
 window.addEventListener("keyup", e => {
@@ -202,19 +201,7 @@ window.addEventListener("keyup", e => {
   }
 });
 
-function closeSidebar() {
-  nodes.forEach(n => n.element.classList.remove(uiConfig.classes.nodeSelectedBorder, uiConfig.classes.nodeSelectedBorderColor));
-  commitSceneChangesToNodeData()
-  selectedNode = null;
-  sidebar.classList.add(uiConfig.classes.hidden);
-  editItemModal.classList.add(uiConfig.classes.hidden);
-  spriteDetailModal.classList.add(uiConfig.classes.hidden);
-  editor.style.transform = "";
-  $('rightButtonContainer').classList.remove("hidden")
-  
-}
-
-editor.addEventListener(uiConfig.events.updateConnection, () => updateConnections(nodes, connections));
+editor.addEventListener(uiConfig.events.updateConnection, () => updateConnections(connections));
 
 editor.addEventListener("click", e => {
   if (e.target === editor) {
@@ -271,7 +258,7 @@ const buildFlagRow = (flag = {}) => {
 };
 
 addItemButton.addEventListener("click", () => {
-  if (!selectedNode) return;
+  if (!window.selectedNode) return;
   editor.style.transform = "";
   conditionsList.innerHTML = "";
   flagsList.innerHTML = "";
@@ -279,7 +266,7 @@ addItemButton.addEventListener("click", () => {
   itemTitleInput.value = "";
   editItemModal.classList.remove(uiConfig.classes.hidden);
   currentEditItem = {
-      nodeId: selectedNode.dataset.id
+      nodeId: window.selectedNode.dataset.id
   };
 });
 
@@ -310,14 +297,14 @@ document.addEventListener(uiConfig.events.editItem, e => {
   };
   editItemModal.classList.remove(uiConfig.classes.hidden);
   let svg = document.getElementById("connections") 
-  const nodeData = nodes.find(n => n.id === currentEditItem.nodeId);
+  const nodeData = window.nodes.find(n => n.id === currentEditItem.nodeId);
   removeRow(nodeData, connections, row, svg)
 });
 
 confirmItemBtn.addEventListener("click", () => {
   commitSceneChangesToNodeData()
   if (!currentEditItem) return;
-  const nodeData = nodes.find(n => n.id === currentEditItem.nodeId);
+  const nodeData = window.nodes.find(n => n.id === currentEditItem.nodeId);
   if (!nodeData) return;
   const conditions = [...conditionsList.children].map(div => {
       const [variable, operator, value] = div.querySelectorAll(uiConfig.selectors.conditionRowInputsSelector);
@@ -342,20 +329,20 @@ confirmItemBtn.addEventListener("click", () => {
       connectionTarget: selectedConnectionTarget
   };
   console.log(currentEditItem)
-  createRow(nodeData, details, svg, nodes, connections, currentEditItem.itemDetails ? currentEditItem.itemDetails.itemId : null);
+  createRow(nodeData, details, svg, connections, currentEditItem.itemDetails ? currentEditItem.itemDetails.itemId : null);
   editItemModal.classList.add(uiConfig.classes.hidden);
   currentEditItem = null;
-  selectNode(nodeData.element, sidebar, editor, nodes);
+  selectNode(nodeData.element, sidebar, editor);
 });
 
 deleteItemBtn.addEventListener("click", () => {
   if (!currentEditItem) return;
-  const nodeData = nodes.find(n => n.id === currentEditItem.nodeId);
+  const nodeData = window.nodes.find(n => n.id === currentEditItem.nodeId);
   if (!nodeData) return;
   commitSceneChangesToNodeData();
   editItemModal.classList.add(uiConfig.classes.hidden);
   currentEditItem = null;
-  selectNode(nodeData.element, sidebar, editor, nodes);
+  selectNode(nodeData.element, sidebar, editor);
 });
 
 async function loadStateFromDBToUI() {
@@ -365,14 +352,14 @@ async function loadStateFromDBToUI() {
   while (connection.firstChild) {
     connection.removeChild(connection.lastChild);
   }
-  nodes = [];
+  window.nodes = [];
   editor.querySelectorAll(uiConfig.selectors.nodeElementSelector).forEach(n => n.remove());
   sceneEditor.style.backgroundImage = 'none';
   spriteList.innerHTML = '';
   sceneEditor.querySelectorAll('.sprite').forEach(el => el.remove());
   const nodeRows = dbInstance.exec("SELECT * FROM nodes")[0]?.values || [];
   nodeRows.forEach(([id, x, y, title]) => {
-      const nodeData = createNode(x, y, editor, nodes, makeDraggable, {
+      const nodeData = createNode(x, y, editor, makeDraggable, {
           id,
           title: title || uiConfig.defaultNodeTitle
       });
@@ -426,7 +413,7 @@ async function loadStateFromDBToUI() {
   });
   const itemRows = dbInstance.exec("SELECT id, node_id, title, connection_target_node_id FROM items")[0]?.values || [];
   itemRows.forEach(([itemId, nodeId, title, connection_target_node_id]) => {
-      const nodeData = nodes.find(n => n.id === nodeId);
+      const nodeData = window.nodes.find(n => n.id === nodeId);
       if (nodeData) {
           const itemDetails = {
               title: title || `${uiConfig.text.defaultItemTitlePrefix}${itemId}`,
@@ -450,31 +437,19 @@ async function loadStateFromDBToUI() {
               });
           });
           console.log(connections)
-          createRow(nodeData, itemDetails, svg, nodes, connections, itemId);
+          createRow(nodeData, itemDetails, svg, connections, itemId);
           const lastRow = nodeData.rows[nodeData.rows.length - 1];
           lastRow.row.dataset.itemId = itemId;
       }
   });
-  updateConnections(nodes, connections);
+  updateConnections(connections);
   console.log("State loaded from database with optimized schema (base64 data loaded from files table).");
 }
 
 function animate() {
-  updateConnections(nodes, connections);
+  updateConnections(connections);
   requestAnimationFrame(animate);
 }
 requestAnimationFrame(animate);
 
-document.addEventListener("DOMContentLoaded", () => {
-  window.dialogueEditor = new EasyMDE({
-      element: $(uiConfig.selectors.dialogueInput),
-      toolbar: false,
-      autoDownloadFontAwesome: false,
-      spellChecker: false,
-  });
-  $(uiConfig.selectors.speakerInput).addEventListener("input", (e) => {
-      if (window.selectedNodeData) {
-          window.selectedNodeData.speaker = e.target.value;
-      }
-  });
-});
+iniializeSidebar();

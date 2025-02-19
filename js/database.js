@@ -83,7 +83,9 @@ export async function initDatabase() {
   console.log("SQLite database initialized with optimized schema (base64 for sprites and backgrounds).");
   return db;
 }
-export function saveStateToDB(db, nodes, connections) {
+export function saveStateToDB(db, connections) {
+  const nodes = window.nodes;
+  
   if (!db) return console.error("Database is not initialized yet.");
   db.run("DELETE FROM sprite_sfx");
   db.run("DELETE FROM sprites");

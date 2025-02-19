@@ -1,4 +1,5 @@
-export function updateConnections(nodes, connections) {
+export function updateConnections(connections) {
+  const nodes = window.nodes;
   const svg = document.getElementById("connections");
   const svgCTM = svg.getScreenCTM();
   connections.forEach((conn) => {

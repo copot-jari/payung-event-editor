@@ -1,4 +1,4 @@
-    import { $ } from "./app.js";
+    import { $, sidebar, svg } from "./app.js";
 import { createRow } from "./items.js";
     import {
         loadSceneForNode
@@ -13,7 +13,9 @@ import { createRow } from "./items.js";
         if (parent) parent.appendChild(el);
         return el;
     };
-    export const createNode = (x, y, editor, nodes, makeDraggableCallback, config = {}) => {
+    export const createNode = (x, y, editor, makeDraggableCallback, config = {}) => {
+        console.log(makeDraggableCallback)
+        const nodes = window.nodes;
         const id = config.id || crypto.randomUUID();
         const node = createEl("div", {
             props: {
@@ -65,7 +67,7 @@ import { createRow } from "./items.js";
         nodes.push(nodeData);
         return nodeData;
     };
-    export const makeDraggable = el => {
+    export function makeDraggable (el) {
         let offsetX, offsetY, isDragging = false;
         el.addEventListener("click", e => {
             el.dispatchEvent(new CustomEvent("nodeToConnect", {
@@ -106,9 +108,12 @@ import { createRow } from "./items.js";
             el.style.zIndex = "";
         });
     };
-    export const selectNode = (node, sidebar, editor, nodes) => {
+    export const selectNode = (node) => {
         $('rightButtonContainer').classList.add("hidden")
+
         window.selectedNodeDOM = node;
+        const nodes = window.nodes
+
         nodes.forEach(n => n.element.classList.remove("border-2", "border-blue-500"));
         node.classList.add("border-2", "border-blue-500");
         sidebar.classList.remove("hidden");
@@ -117,13 +122,14 @@ import { createRow } from "./items.js";
         const nodeItems = sidebar.querySelector("#nodeItems");
         nodeItems.innerHTML = "";
         const nodeData = nodes.find(n => n.id === node.dataset.id);
-        console.log(nodeData);
+
         document.getElementById("speakerInput").value = nodeData.speaker || "";
         if (window.dialogueEditor) {
             window.dialogueEditor.value(nodeData.dialogue || "");
         } else {
             document.getElementById("dialogueInput").value = nodeData.dialogue || "";
         }
+
         nodeData.rows.forEach(({
             row
         }) => {
@@ -131,6 +137,7 @@ import { createRow } from "./items.js";
             itemDiv.textContent = row.dataset.id;
             nodeItems.appendChild(itemDiv);
         });
+
         const rect = node.getBoundingClientRect();
         const nodeAbsoluteX = rect.left + window.pageXOffset;
         const nodeAbsoluteY = rect.top + window.pageYOffset;
@@ -140,42 +147,53 @@ import { createRow } from "./items.js";
         const viewportCenterY = window.innerHeight / 2;
         const targetScrollX = nodeCenterX - viewportCenterX;
         const targetScrollY = nodeCenterY - viewportCenterY;
+
         loadSceneForNode(nodeData);
         window.selectedNodeData = nodeData;
+        window.selectedNode = node;
+
         window.scrollTo({
             left: targetScrollX,
             top: targetScrollY,
             behavior: "smooth"
         });
     };
-    export const duplicateNode = (originalNodeData, editor, nodes, makeDraggableCallback) => {
+    export const duplicateNode = (originalNodeData, editor) => {
+        const nodes = window.nodes;
         const originalNodeRect = originalNodeData.element.getBoundingClientRect();
         const offsetX = 50;
         const offsetY = 50;
         const x = originalNodeRect.left + window.scrollX + offsetX;
         const y = originalNodeRect.top + window.scrollY + offsetY;
-        const newNodeData = createNode(x, y, editor, nodes, makeDraggableCallback, {
+        const newNodeData = createNode(x, y, editor, makeDraggable, {
             title: originalNodeData.element.querySelector('.font-semibold').textContent + " Copy"
         });
         newNodeData.dialogue = originalNodeData.dialogue;
         newNodeData.speaker = originalNodeData.speaker;
         newNodeData.scene.background = originalNodeData.scene.background;
         newNodeData.scene.sprites = originalNodeData.scene.sprites.map(sprite => ({...sprite}));
-        // originalNodeData.rows.forEach(originalRow => {
-        //     const itemDetails = {...originalRow.row.itemDetails};
-        //     createRow(newNodeData, itemDetails, document.getElementById('connections'), nodes, []);
-        // });
-        // originalNodeData.rows.forEach(originalRow => {
-        //     if (originalRow.row.itemDetails.connectionTarget) {
-        //         const targetNodeId = originalRow.row.itemDetails.connectionTarget;
-        //         const targetNode = nodes.find(n => n.id === targetNodeId);
-        //         if (targetNode) {
-        //             const newItemRow = newNodeData.rows.find(row => row.row.itemDetails.title === originalRow.row.itemDetails.title);
-        //             if (newItemRow) {
-        //                 newItemRow.row.itemDetails.connectionTarget = targetNodeId; 
-        //             }
-        //         }
-        //     }
-        // });
+
         return newNodeData;
     };
+
+    export function deleteNode(nodeData, editor, connections) {
+        if (!nodeData) return;
+    
+        editor.removeChild(nodeData.element);
+    
+        window.nodes = window.nodes.filter(node => node.id !== nodeData.id);
+
+        if (connections) {
+            let old = connections.filter(e => e.from.nodeId == nodeData.id || e.to.nodeId == nodeData.id)
+            if (old.length > 0) {
+                const lengthOfOld = old.length
+                for (let index = 0; index < lengthOfOld; index++) {
+                    const lol = old[index]
+                    svg.removeChild(lol.line)
+                    connections.splice(connections.indexOf(lol), 1)   
+                }
+            }
+
+        }
+    }
+    

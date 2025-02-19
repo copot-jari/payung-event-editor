@@ -1,4 +1,5 @@
-export function createRow(nodeData, details = {}, svg, nodes, connections, prevId) {
+export function createRow(nodeData, details = {}, svg, connections, prevId) {
+    const nodes = window.nodes;
     const node = nodeData.element;
     const row = document.createElement("div");
     row.className = "flex items-center justify-between border gap-2 bg-[#030712] border-[#343740] p-1 rounded";
