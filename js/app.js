@@ -453,3 +453,62 @@ function animate() {
 requestAnimationFrame(animate);
 
 iniializeSidebar();
+
+
+  $('parseScript').addEventListener('click', () => {
+    $('parseScriptModal').classList.remove('hidden');
+  });
+
+  $('parseScriptClose').addEventListener('click', () => {
+    $('parseScriptModal').classList.add('hidden');
+  });
+
+  $('parseScriptSubmit').addEventListener('click', () => {
+    const scriptText = $('scriptInput').value.trim();
+    if (!scriptText) { 
+      alert("Its empty"); 
+      return; 
+    }
+    
+    const groups = scriptText.split(/\n\s*\n/);
+    groups.forEach((group, groupIndex) => {
+      const lines = group.split('\n').filter(line => line.trim() !== '');
+      const groupNodes = [];
+      lines.forEach((line, index) => {
+        const parts = line.split(':');
+        if (parts.length < 2) return; 
+        const speaker = parts[0].trim();
+        const dialogue = parts.slice(1).join(':').trim();
+        
+        let x = 100 + index * 250;
+        let y = 100 + groupIndex * 150;        
+        
+        const screenCenterX = window.innerWidth / 2 + window.pageXOffset;
+        const screenCenterY = window.innerHeight / 2 + window.pageYOffset;
+        const editorRect = editor.getBoundingClientRect();
+        const editorAbsX = editorRect.left + window.pageXOffset;
+        const editorAbsY = editorRect.top + window.pageYOffset;
+        x += screenCenterX - editorAbsX;
+        y += screenCenterY - editorAbsY;
+        const newNode = createNode(x, y, document.getElementById('editor'), makeDraggable, { title: speaker });
+        newNode.dialogue = dialogue;
+        newNode.speaker = speaker;
+        groupNodes.push(newNode);
+      });
+      
+      for (let i = 0; i < groupNodes.length - 1; i++) {
+        const currentNode = groupNodes[i];
+        const nextNode = groupNodes[i+1];
+        const itemDetails = {
+          title: "PRE_CONT",
+          connectionTarget: nextNode.id,
+          conditions: [],
+          flags: []
+        };
+        
+        createRow(currentNode, itemDetails, document.getElementById('connections'), connections);
+      }
+    });
+    
+    $('parseScriptModal').classList.add('hidden');
+  });

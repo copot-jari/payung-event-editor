@@ -164,6 +164,9 @@
                 <input type="file" id="spriteUpload" accept="image/*" class="hidden">
                 <button id="uploadSprite" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-2 py-1 rounded">Upload Sprite</button>
               </div>
+              <div>
+                <button id="inheritPrevious" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-2 py-1 rounded">Inherit Previous</button>
+              </div>
             </div>
             <div id="spriteList" class="mt-2 flex flex-wrap gap-2"></div>
           </div>
@@ -225,7 +228,23 @@
         <button id="closeSpriteDetailModal" class="bg-red-700 bg-opacity-50 hover:bg-opacity-100 transition border-red-700 border text-white px-2 py-1 rounded">Close</button>
       </div>
     </div>
-    <button id="addNode" class="fixed bottom-4 left-4 bg-lime-700 bg-opacity-50 hover:bg-opacity-100 transition border-lime-700 border text-white px-4 py-2 rounded">Add Dialogue</button>
+    <div id="parseScriptModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+      <div class="bg-[#030712] p-6 rounded-lg border border-[#343740] w-1/3">
+        <h2 class="text-xl font-bold mb-4">Parse Dialogue Script</h2>
+        <textarea id="scriptInput" class="w-full h-48 p-2 bg-gray-800 text-white border border-gray-600 rounded mb-4" placeholder="Enter dialogue script here..."></textarea>
+        <div class="flex justify-end gap-2">
+          <button id="parseScriptClose" class="bg-red-700 hover:bg-red-800 transition border text-white px-4 py-2 rounded">Cancel</button>
+          <button id="parseScriptSubmit" class="bg-green-700 hover:bg-green-800 transition border text-white px-4 py-2 rounded">Parse</button>
+        </div>
+      </div>
+    </div>
+    <div id="rightButtonContainer" class="fixed bottom-4 left-4 flex space-x-2">
+      <div class="flex space-x-2">
+        <button id="addNode" class="bg-lime-700 bg-opacity-50 hover:bg-opacity-100 transition border-lime-700 border text-white px-4 py-2 rounded">Add Dialogue</button>
+        <button id="parseScript" class="bg-lime-700 bg-opacity-50 hover:bg-opacity-100 transition border-lime-700 border text-white px-4 py-2 rounded">
+          Parse Script
+        </button>
+    </div>
     <div id="rightButtonContainer" class="fixed bottom-4 right-4 flex space-x-2">
       <div class="flex space-x-2">
         <button id="saveDB" class="bg-purple-700 bg-opacity-50 border border-purple-700 hover:bg-opacity-100 transition text-white px-4 py-2 rounded">Save Database</button>
