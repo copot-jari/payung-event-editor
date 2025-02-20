@@ -1,6 +1,6 @@
 import { deleteNode, duplicateNode, makeDraggable, selectNode } from "./nodes.js";
 import { commitSceneChangesToNodeData, loadSceneForNode } from "./sprite.js";
-import { $, connections, duplicateNodeButton, editItemModal, editor, sidebar, spriteDetailModal, uiConfig } from "./app.js";
+import { $, connections, dbInstance, duplicateNodeButton, editItemModal, editor, sidebar, spriteDetailModal, uiConfig } from "./app.js";
 
 export function closeSidebar() {
     window.nodes.forEach(n => n.element.classList.remove(uiConfig.classes.nodeSelectedBorder, uiConfig.classes.nodeSelectedBorderColor));
@@ -22,6 +22,10 @@ export function inheritPreviousNode() {
         window.selectedNodeData.scene = JSON.parse(JSON.stringify(parentNode.scene));
         loadSceneForNode(window.selectedNodeData)
     }
+}
+
+function previewSceneStart() {
+    previewFlow(dbInstance, window.selectedNodeData)
 }
 
 export function iniializeSidebar() {
@@ -60,6 +64,7 @@ export function iniializeSidebar() {
             $(uiConfig.selectors.deleteNodeModal).classList.add(uiConfig.classes.hidden); 
         });
         $('inheritPrevious').addEventListener('click', inheritPreviousNode)
+        $('Preview').addEventListener('click', previewSceneStart)
     });
 
     duplicateNodeButton.addEventListener("click", () => {
@@ -72,4 +77,25 @@ export function iniializeSidebar() {
         }
     });
 
+}
+
+function previewFlow(db, startingNodeId) {        
+    var viewerWindow = window.open("", "VNViewer", "width=1280,height=720");
+    viewerWindow.nodes = window.nodes;
+    viewerWindow.firstNode = startingNodeId;
+
+    var HTMLString = getFile("viewer.html") //some way to get file as HTML string
+    
+        
+    viewerWindow.document.write(HTMLString);
+    viewerWindow.document.close();
+  }
+
+
+  
+function getFile(U) {
+    var X = new XMLHttpRequest();
+    X.open('GET', U, false);
+    X.send();
+    return X.responseText;
 }
