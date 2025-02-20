@@ -16,9 +16,10 @@ Bugs and glitches:
 - [x] Relational line is drawn incorrectly if zoom changes from default
 - [x] Scene, dialogues et cetera is not saved when saving db
 - [ ] SFX must be readded each time user edits detail sprite
-- [ ] Sometimes the line goes off
-- [ ] Drag connection doesn't work
-- [ ] WHen a sprite is deleted it cannot be added back until two scenes is focued and unfocused
+- [X] Sometimes the line goes off
+- [X] Drag connection doesn't work
+- [ ] When a sprite is deleted it cannot be added back until two scenes is focued and unfocused
+- [ ] After deleting a scene, all existing scenes are normal but adding a new scene causes it to no be able to be connected
 
 ## Features
 Todo List:
@@ -31,11 +32,13 @@ Todo List:
 - [X] Integrate with scene editor (upcoming)
 - [x] Zoom In/Out for more working space
 - [x] Panning
-- [ ] Move event without choice
-- [ ] Color coded actor
-- [ ] Scene title
+- [X] Move event without choice
+- [X] Color coded actor
+- [X] Scene title
+- [X] Script Parser
 - [ ] Flags gained
 - [ ] Flags remove
 - [ ] Item gain
 - [ ] Item remove
+- [ ] Scene Preview
 
