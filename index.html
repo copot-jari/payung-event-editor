@@ -9,6 +9,14 @@
     <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
     <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.173.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.173.0/examples/jsm/"
+        }
+      }
+    </script>
     <style>
       body {
         overflow: overlay;
@@ -110,11 +118,9 @@
       width: 100%;
       max-width: 1000px;
       margin: 0 auto;
-      /* 16:9 aspect ratio via padding-top */
       padding-top: 56.25%;
       background: #333;
     }
-    /* The canvas is absolutely positioned within the container */
     #sceneCanvas {
       position: absolute;
       top: 0;

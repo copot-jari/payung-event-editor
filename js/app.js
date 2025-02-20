@@ -68,7 +68,7 @@ export let connections = [];
 let currentEditItem = null,
   connectionSelectionMode = false,
   selectedConnectionTarget = null;
-let dbInstance = null;
+export let dbInstance = null;
 
 export const editor = $(uiConfig.selectors.editor),
   svg = $(uiConfig.selectors.connectionsSVG),
@@ -109,7 +109,8 @@ import {
   updateConnections
 } from "./connections.js";
 import {
-  commitSceneChangesToNodeData
+  commitSceneChangesToNodeData,
+  resizeCanvas
 } from "./sprite.js";
 import { closeSidebar, iniializeSidebar } from "./sidebar.js";
   
@@ -354,9 +355,7 @@ async function loadStateFromDBToUI() {
   }
   window.nodes = [];
   editor.querySelectorAll(uiConfig.selectors.nodeElementSelector).forEach(n => n.remove());
-  sceneEditor.style.backgroundImage = 'none';
   spriteList.innerHTML = '';
-  sceneEditor.querySelectorAll('.sprite').forEach(el => el.remove());
   const nodeRows = dbInstance.exec("SELECT * FROM nodes")[0]?.values || [];
   nodeRows.forEach(([id, x, y, title]) => {
       const nodeData = createNode(x, y, editor, makeDraggable, {
@@ -449,6 +448,7 @@ async function loadStateFromDBToUI() {
 function animate() {
   updateConnections(connections);
   requestAnimationFrame(animate);
+  resizeCanvas()
 }
 requestAnimationFrame(animate);
 

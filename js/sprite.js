@@ -1,60 +1,160 @@
+import * as THREE from 'three';
+
 const canvas = document.getElementById('sceneCanvas');
-const ctx = canvas.getContext('2d');
 const canvasContainer = document.getElementById('canvasContainer');
 const baseWidth = 1280;
 const baseHeight = 720;
+const sidebar = document.getElementById('sidebar')
 
-document.addEventListener("DOMContentLoaded", () => {
-    
-    canvas.width = baseWidth;
-    canvas.height = baseHeight;
+const camera = new THREE.OrthographicCamera(0, baseWidth, baseHeight, 0, -1000, 1000);
 
-    window.addEventListener('resize', resizeCanvas);
+const renderer = new THREE.WebGLRenderer({
+    canvas,
+    alpha: true
 });
+renderer.setClearColor(0x000000, 0);
+renderer.setSize(baseWidth, baseHeight);
 
+const scene = new THREE.Scene();
+
+let backgroundMesh = null;
+let sprites = [];
+let currentSprite = null;
+
+let draggingSprite = null;
+let resizingSprite = null;
+let dragOffsetX = 0,
+    dragOffsetY = 0;
+let resizeStartX = 0,
+    resizeStartY = 0,
+    resizeStartWidth = 0,
+    resizeStartHeight = 0;
+
+let selectionOutline = null;
 
 export function resizeCanvas() {
     const containerWidth = canvasContainer.clientWidth;
     const containerHeight = canvasContainer.clientHeight;
-    
     const scale = Math.min(containerWidth / baseWidth, containerHeight / baseHeight);
-
     canvas.style.width = baseWidth * scale + 'px';
     canvas.style.height = baseHeight * scale + 'px';
 }
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+}
+animate();
+
+function updateSpriteMesh(sprite) {
+    if (sprite.mesh) {
+
+        sprite.mesh.position.set(
+            sprite.x + sprite.width / 2,
+            sprite.y + sprite.height / 2,
+            0
+        );
+        sprite.mesh.scale.set(sprite.width, sprite.height, 1);
 
 
-let backgroundImage = null;
-const sprites = []; 
-let currentSprite = null; 
+        sprite.mesh.material.color.setScalar(sprite.focus ? 1.0 : 0.5);
+    }
 
+    if (sprite === currentSprite) updateSelectionOutline();
+}
 
-canvas.addEventListener('mousedown', (e) => {
+function updateSelectionOutline() {
+    if (selectionOutline) {
+        scene.remove(selectionOutline);
+        selectionOutline = null;
+    }
+    if (currentSprite) {
+        const handleSize = 15;
+        const {
+            x,
+            y,
+            width: w,
+            height: h
+        } = currentSprite;
+
+        const points = [
+            new THREE.Vector3(x, y, 1),
+            new THREE.Vector3(x + w, y, 1),
+            new THREE.Vector3(x + w, y + h, 1),
+            new THREE.Vector3(x, y + h, 1),
+            new THREE.Vector3(x, y, 1)
+        ];
+        const geo = new THREE.BufferGeometry().setFromPoints(points);
+        const lineMat = new THREE.LineDashedMaterial({
+            color: 0x3b82f6,
+            dashSize: 5,
+            gapSize: 3,
+            linewidth: 2
+        });
+        const line = new THREE.Line(geo, lineMat);
+        line.computeLineDistances();
+
+        const handleGeo = new THREE.PlaneGeometry(handleSize, handleSize);
+        const handleMat = new THREE.MeshBasicMaterial({
+            color: 0xffffff
+        });
+        const handleMesh = new THREE.Mesh(handleGeo, handleMat);
+        handleMesh.position.set(x + w - handleSize / 2, y + h - handleSize / 2, 1);
+
+        const borderGeo = new THREE.PlaneGeometry(handleSize + 4, handleSize + 4);
+        const borderMat = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            wireframe: true
+        });
+        const borderMesh = new THREE.Mesh(borderGeo, borderMat);
+        borderMesh.position.copy(handleMesh.position);
+
+        selectionOutline = new THREE.Group();
+        selectionOutline.add(line);
+        selectionOutline.add(borderMesh);
+        selectionOutline.add(handleMesh);
+        scene.add(selectionOutline);
+    }
+}
+
+function getCanvasCoordinates(event) {
     const rect = canvas.getBoundingClientRect();
-    
     const scaleX = baseWidth / rect.width;
     const scaleY = baseHeight / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    return {
+        x: (event.clientX - rect.left) * scaleX,
+        y: baseHeight - (event.clientY - rect.top) * scaleY
+    };
+}
 
-    
+sidebar.addEventListener('mousedown', (e) => {
+    const {
+        x,
+        y
+    } = getCanvasCoordinates(e);
+
+    const handleHitSize = 15;
     for (let i = sprites.length - 1; i >= 0; i--) {
         const sprite = sprites[i];
-        const handleSize = 10;
-        if (x >= sprite.x + sprite.width - handleSize && x <= sprite.x + sprite.width &&
-            y >= sprite.y + sprite.height - handleSize && y <= sprite.y + sprite.height) {
+        if (
+            x >= sprite.x + sprite.width - handleHitSize &&
+            x <= sprite.x + sprite.width + handleHitSize / 2 &&
+            y >= sprite.y + sprite.height - handleHitSize &&
+            y <= sprite.y + sprite.height + handleHitSize / 2
+        ) {
             resizingSprite = sprite;
             resizeStartX = x;
             resizeStartY = y;
             resizeStartWidth = sprite.width;
             resizeStartHeight = sprite.height;
             currentSprite = sprite;
-            redraw();
+            updateSelectionOutline();
             return;
         }
     }
 
-    
     for (let i = sprites.length - 1; i >= 0; i--) {
         const sprite = sprites[i];
         if (x >= sprite.x && x <= sprite.x + sprite.width &&
@@ -63,45 +163,69 @@ canvas.addEventListener('mousedown', (e) => {
             dragOffsetX = x - sprite.x;
             dragOffsetY = y - sprite.y;
             currentSprite = sprite;
-            redraw();
+            updateSelectionOutline();
             return;
         }
     }
 });
 
-canvas.addEventListener('mousemove', (e) => {
-    if (!draggingSprite && !resizingSprite) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = baseWidth / rect.width;
-    const scaleY = baseHeight / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+sidebar.addEventListener('mousemove', (e) => {
 
+    if (!draggingSprite && !resizingSprite) {
+        const {
+            x,
+            y
+        } = getCanvasCoordinates(e);
+        let overHandle = false;
+        const handleHitSize = 15;
+        for (let i = sprites.length - 1; i >= 0; i--) {
+            const sprite = sprites[i];
+            if (
+                x >= sprite.x + sprite.width - handleHitSize &&
+                x <= sprite.x + sprite.width + handleHitSize / 2 &&
+                y >= sprite.y + sprite.height - handleHitSize &&
+                y <= sprite.y + sprite.height + handleHitSize / 2
+            ) {
+                overHandle = true;
+                break;
+            }
+        }
+        canvas.style.cursor = overHandle ? 'nwse-resize' : 'default';
+    }
+
+
+    if (!draggingSprite && !resizingSprite) return;
+    const {
+        x,
+        y
+    } = getCanvasCoordinates(e);
     if (draggingSprite) {
         draggingSprite.x = x - dragOffsetX;
         draggingSprite.y = y - dragOffsetY;
-        redraw();
+        updateSpriteMesh(draggingSprite);
     } else if (resizingSprite) {
         const dx = x - resizeStartX;
-        const dy = y - resizeStartY;
-        resizingSprite.width = resizeStartWidth + dx;
-        resizingSprite.height = resizeStartHeight + dy;
-        redraw();
+
+        let newWidth = Math.max(10, resizeStartWidth + dx);
+        const aspectRatio = resizeStartWidth / resizeStartHeight;
+        let newHeight = newWidth / aspectRatio;
+        resizingSprite.width = newWidth;
+        resizingSprite.height = newHeight;
+        updateSpriteMesh(resizingSprite);
     }
 });
 
-canvas.addEventListener('mouseup', () => {
+sidebar.addEventListener('mouseup', () => {
     draggingSprite = null;
     resizingSprite = null;
 });
 
 
-canvas.addEventListener('dblclick', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = baseWidth / rect.width;
-    const scaleY = baseHeight / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+sidebar.addEventListener('dblclick', (e) => {
+    const {
+        x,
+        y
+    } = getCanvasCoordinates(e);
     for (let i = sprites.length - 1; i >= 0; i--) {
         const sprite = sprites[i];
         if (x >= sprite.x && x <= sprite.x + sprite.width &&
@@ -113,50 +237,6 @@ canvas.addEventListener('dblclick', (e) => {
 });
 
 
-
-function redraw() {
-    ctx.clearRect(0, 0, baseWidth, baseHeight);
-    if (backgroundImage) {
-        ctx.drawImage(backgroundImage, 0, 0, baseWidth, baseHeight);
-    }
-    sprites.forEach(sprite => {
-        ctx.drawImage(sprite.image, sprite.x, sprite.y, sprite.width, sprite.height);
-        
-        if (!sprite.focus) {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-            ctx.fillRect(sprite.x, sprite.y, sprite.width, sprite.height);
-        }
-        
-        if (sprite === currentSprite) {
-            
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = '#3b82f6';
-            ctx.strokeRect(sprite.x, sprite.y, sprite.width, sprite.height);
-
-            
-            const handleSize = 10;
-            
-            ctx.fillStyle = 'white';
-            ctx.fillRect(sprite.x + sprite.width - handleSize, sprite.y + sprite.height - handleSize, handleSize, handleSize);
-            
-            ctx.strokeStyle = 'black';
-            ctx.strokeRect(sprite.x + sprite.width - handleSize, sprite.y + sprite.height - handleSize, handleSize, handleSize);
-        }
-    });
-}
-
-
-
-let draggingSprite = null;
-let resizingSprite = null;
-let dragOffsetX = 0,
-    dragOffsetY = 0;
-let resizeStartX = 0,
-    resizeStartY = 0,
-    resizeStartWidth = 0,
-    resizeStartHeight = 0;
-
-
 const backgroundUpload = document.getElementById('backgroundUpload');
 const uploadBackground = document.getElementById('uploadBackground');
 uploadBackground.addEventListener('click', () => backgroundUpload.click());
@@ -165,9 +245,27 @@ backgroundUpload.addEventListener('change', (e) => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
-        backgroundImage = new Image();
-        backgroundImage.onload = redraw;
-        backgroundImage.src = event.target.result;
+        const imageSrc = event.target.result;
+        if (backgroundMesh) {
+
+            const texture = new THREE.TextureLoader().load(imageSrc);
+            texture.flipY = true;
+            texture.colorSpace = THREE.SRGBColorSpace
+            backgroundMesh.material.map = texture;
+            backgroundMesh.material.needsUpdate = true;
+        } else {
+
+            const texture = new THREE.TextureLoader().load(imageSrc);
+            texture.flipY = true;
+            texture.colorSpace = THREE.SRGBColorSpace
+            const geo = new THREE.PlaneGeometry(baseWidth, baseHeight);
+            const mat = new THREE.MeshBasicMaterial({
+                map: texture
+            });
+            backgroundMesh = new THREE.Mesh(geo, mat);
+            backgroundMesh.position.set(baseWidth / 2, baseHeight / 2, -1);
+            scene.add(backgroundMesh);
+        }
     };
     reader.readAsDataURL(file);
 });
@@ -181,10 +279,13 @@ spriteUpload.addEventListener('change', (e) => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
+        const imageSrc = event.target.result;
         const img = new Image();
         img.onload = () => {
-            const spriteWidth = 100,
-                spriteHeight = 100;
+
+            const defaultWidth = 100;
+            const spriteWidth = defaultWidth;
+            const spriteHeight = defaultWidth * (img.naturalHeight / img.naturalWidth);
             const sprite = {
                 id: Date.now(),
                 image: img,
@@ -197,11 +298,25 @@ spriteUpload.addEventListener('change', (e) => {
                 continuityIdentifier: '',
                 sfx: []
             };
+
+            const texture = new THREE.Texture(img);
+            texture.needsUpdate = true;
+            texture.flipY = true;
+            texture.colorSpace = THREE.SRGBColorSpace
+            const geometry = new THREE.PlaneGeometry(1, 1);
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(sprite.x + sprite.width / 2, sprite.y + sprite.height / 2, 0);
+            mesh.scale.set(sprite.width, sprite.height, 1);
+            sprite.mesh = mesh;
+            scene.add(mesh);
             sprites.push(sprite);
-            addSpriteThumbnail(sprite, event.target.result);
-            redraw();
+            addSpriteThumbnail(sprite, imageSrc);
         };
-        img.src = event.target.result;
+        img.src = imageSrc;
     };
     reader.readAsDataURL(file);
 });
@@ -221,9 +336,16 @@ function addSpriteThumbnail(sprite, src) {
     deleteBtn.addEventListener('click', () => {
         const index = sprites.findIndex(s => s.id === sprite.id);
         if (index > -1) {
+            scene.remove(sprite.mesh);
             sprites.splice(index, 1);
             thumbnailContainer.remove();
-            redraw();
+            if (currentSprite && currentSprite.id === sprite.id) {
+                currentSprite = null;
+                if (selectionOutline) {
+                    scene.remove(selectionOutline);
+                    selectionOutline = null;
+                }
+            }
         }
     });
     const editBtn = document.createElement('button');
@@ -254,6 +376,7 @@ function openSpriteDetailModal(sprite) {
     spriteSfxList.innerHTML = '';
     (sprite.sfx || []).forEach(sfxItem => addSpriteSfxRow(sfxItem));
     spriteDetailModal.classList.remove('hidden');
+    updateSelectionOutline();
 }
 
 function addSpriteSfxRow(preset = {}) {
@@ -317,7 +440,7 @@ saveSpriteDetailsBtn.addEventListener('click', () => {
     currentSprite.focus = spriteFocusToggle.checked;
     currentSprite.animationClass = spriteAnimClassInput.value;
     currentSprite.continuityIdentifier = spriteContinuityIdentifierInput.value;
-    
+
     const sfxRows = spriteSfxList.querySelectorAll('.sfx-row');
     const sfxData = [];
     sfxRows.forEach(row => {
@@ -337,7 +460,7 @@ saveSpriteDetailsBtn.addEventListener('click', () => {
     });
     currentSprite.sfx = sfxData;
     spriteDetailModal.classList.add('hidden');
-    redraw();
+    updateSpriteMesh(currentSprite);
 });
 
 closeSpriteDetailModal.addEventListener('click', () => {
@@ -345,35 +468,68 @@ closeSpriteDetailModal.addEventListener('click', () => {
 });
 
 
+
 export function loadSceneForNode(nodeData) {
-    ctx.clearRect(0, 0, baseWidth, baseHeight);
-    if (nodeData.scene.background) {
-        backgroundImage = new Image();
-        backgroundImage.onload = redraw;
-        backgroundImage.src = nodeData.scene.background;
-    } else {
-        backgroundImage = null;
+
+    if (backgroundMesh) {
+        scene.remove(backgroundMesh);
+        backgroundMesh = null;
     }
-    sprites.length = 0;
+
+    scene.remove(selectionOutline);
+    selectionOutline = null;
+    sprites.forEach(sprite => scene.remove(sprite.mesh));
+    sprites = [];
     spriteList.innerHTML = '';
+
+
+    if (nodeData.scene.background) {
+        const texture = new THREE.TextureLoader().load(nodeData.scene.background);
+        texture.flipY = true;
+        texture.colorSpace = THREE.SRGBColorSpace
+        const geo = new THREE.PlaneGeometry(baseWidth, baseHeight);
+        const mat = new THREE.MeshBasicMaterial({
+            map: texture
+        });
+        backgroundMesh = new THREE.Mesh(geo, mat);
+        backgroundMesh.position.set(baseWidth / 2, baseHeight / 2, -1);
+        scene.add(backgroundMesh);
+    }
+
     nodeData.scene.sprites.forEach(spriteData => {
         const img = new Image();
-        img.onload = redraw;
-        img.src = spriteData.src;
-        const sprite = {
-            id: Date.now() + Math.random(),
-            image: img,
-            x: spriteData.x,
-            y: spriteData.y,
-            width: spriteData.width,
-            height: spriteData.height,
-            focus: spriteData.focus !== false,
-            animationClass: spriteData.animationClass || '',
-            continuityIdentifier: spriteData.continuityIdentifier || '',
-            sfx: spriteData.sfx || []
+        img.onload = () => {
+            const sprite = {
+                id: Date.now() + Math.random(),
+                image: img,
+                x: spriteData.x,
+                y: spriteData.y,
+                width: spriteData.width,
+                height: spriteData.height,
+                focus: spriteData.focus !== false,
+                animationClass: spriteData.animationClass || '',
+                continuityIdentifier: spriteData.continuityIdentifier || '',
+                sfx: spriteData.sfx || []
+            };
+            const texture = new THREE.Texture(img);
+            texture.needsUpdate = true;
+            texture.flipY = true;
+            texture.colorSpace = THREE.SRGBColorSpace
+            const geometry = new THREE.PlaneGeometry(1, 1);
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(sprite.x + sprite.width / 2, sprite.y + sprite.height / 2, 0);
+            mesh.scale.set(sprite.width, sprite.height, 1);
+            sprite.mesh = mesh;
+            scene.add(mesh);
+            sprites.push(sprite);
+            updateSpriteMesh(sprite);
+            addSpriteThumbnail(sprite, spriteData.src);
         };
-        sprites.push(sprite);
-        addSpriteThumbnail(sprite, spriteData.src);
+        img.src = spriteData.src;
     });
 }
 
@@ -382,7 +538,9 @@ export function commitSceneChangesToNodeData() {
     window.selectedNodeData.dialogue = window.dialogueEditor.value();
     window.selectedNodeDOM.querySelector("div.font-semibold").textContent =
         `${window.selectedNodeData.speaker} - ${window.selectedNodeData.dialogue}`;
-    window.selectedNodeData.scene.background = backgroundImage ? backgroundImage.src : null;
+    window.selectedNodeData.scene.background = backgroundMesh ?
+        (backgroundMesh.material.map.image.currentSrc || backgroundMesh.material.map.image.src) :
+        null;
     const updatedSprites = sprites.map(sprite => ({
         src: sprite.image.src,
         x: sprite.x,
@@ -396,5 +554,3 @@ export function commitSceneChangesToNodeData() {
     }));
     window.selectedNodeData.scene.sprites = updatedSprites;
 }
-
-requestAnimationFrame
