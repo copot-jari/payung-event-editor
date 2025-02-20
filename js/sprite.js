@@ -50,14 +50,16 @@ animate();
 
 function updateSpriteMesh(sprite) {
     if (sprite.mesh) {
-
+        
         sprite.mesh.position.set(
             sprite.x + sprite.width / 2,
             sprite.y + sprite.height / 2,
-            0
+            sprite.zIndex !== undefined ? sprite.zIndex : 0
         );
-        sprite.mesh.scale.set(sprite.width, sprite.height, 1);
-
+        
+        
+        const scaleX = sprite.flip ? -sprite.width : sprite.width;
+        sprite.mesh.scale.set(scaleX, sprite.height, 1);
 
         sprite.mesh.material.color.setScalar(sprite.focus ? 1.0 : 0.5);
     }
@@ -296,7 +298,9 @@ spriteUpload.addEventListener('change', (e) => {
                 focus: true,
                 animationClass: '',
                 continuityIdentifier: '',
-                sfx: []
+                sfx: [],
+                zIndex: 0,    
+                flip: false   
             };
 
             const texture = new THREE.Texture(img);
@@ -373,6 +377,13 @@ function openSpriteDetailModal(sprite) {
     spriteFocusToggle.checked = sprite.focus;
     spriteAnimClassInput.value = sprite.animationClass;
     spriteContinuityIdentifierInput.value = sprite.continuityIdentifier;
+    
+    
+    const spriteZIndexInput = document.getElementById('spriteZIndexInput');
+    const spriteFlipToggle = document.getElementById('spriteFlipToggle');
+    if (spriteZIndexInput) spriteZIndexInput.value = sprite.zIndex !== undefined ? sprite.zIndex : 0;
+    if (spriteFlipToggle) spriteFlipToggle.checked = sprite.flip || false;
+
     spriteSfxList.innerHTML = '';
     (sprite.sfx || []).forEach(sfxItem => addSpriteSfxRow(sfxItem));
     spriteDetailModal.classList.remove('hidden');
@@ -440,6 +451,12 @@ saveSpriteDetailsBtn.addEventListener('click', () => {
     currentSprite.focus = spriteFocusToggle.checked;
     currentSprite.animationClass = spriteAnimClassInput.value;
     currentSprite.continuityIdentifier = spriteContinuityIdentifierInput.value;
+    
+    
+    const spriteZIndexInput = document.getElementById('spriteZIndexInput');
+    const spriteFlipToggle = document.getElementById('spriteFlipToggle');
+    if (spriteZIndexInput) currentSprite.zIndex = parseFloat(spriteZIndexInput.value) || 0;
+    if (spriteFlipToggle) currentSprite.flip = spriteFlipToggle.checked;
 
     const sfxRows = spriteSfxList.querySelectorAll('.sfx-row');
     const sfxData = [];
@@ -509,7 +526,9 @@ export function loadSceneForNode(nodeData) {
                 focus: spriteData.focus !== false,
                 animationClass: spriteData.animationClass || '',
                 continuityIdentifier: spriteData.continuityIdentifier || '',
-                sfx: spriteData.sfx || []
+                sfx: spriteData.sfx || [],
+                zIndex: spriteData.zIndex !== undefined ? spriteData.zIndex : 0, 
+                flip: spriteData.flip !== undefined ? spriteData.flip : false         
             };
             const texture = new THREE.Texture(img);
             texture.needsUpdate = true;
@@ -550,7 +569,9 @@ export function commitSceneChangesToNodeData() {
         focus: sprite.focus,
         animationClass: sprite.animationClass,
         continuityIdentifier: sprite.continuityIdentifier,
-        sfx: sprite.sfx
+        sfx: sprite.sfx,
+        zIndex: sprite.zIndex, 
+        flip: sprite.flip        
     }));
     window.selectedNodeData.scene.sprites = updatedSprites;
 }

@@ -374,8 +374,8 @@ async function loadStateFromDBToUI() {
           nodeData.dialogue = dialogue || "";
           nodeData.speaker = speaker || "";
       }
-      const spriteRows = dbInstance.exec(`SELECT id, file_id, x, y, width, height, focus, animation_class, continuity_id FROM sprites WHERE scene_node_id = ?`, [id])[0]?.values || [];
-      spriteRows.forEach(([spriteId, file_id, spriteX, spriteY, width, height, focus, animation_class, continuity_id]) => {
+      const spriteRows = dbInstance.exec(`SELECT id, file_id, x, y, width, height, focus, animation_class, continuity_id, flip, zIndex FROM sprites WHERE scene_node_id = ?`, [id])[0]?.values || [];
+      spriteRows.forEach(([spriteId, file_id, spriteX, spriteY, width, height, focus, animation_class, continuity_id, flip, zIndex]) => {
           let src = null;
           if (file_id) {
               const fileData = dbInstance.exec(`SELECT base64_data FROM files WHERE id = ?`, [file_id])[0]?.values?.[0]?.[0];
@@ -390,7 +390,9 @@ async function loadStateFromDBToUI() {
               focus: focus === 1,
               animationClass: animation_class || '',
               continuityIdentifier: continuity_id || '',
-              sfx: []
+              sfx: [],
+              flip: flip,
+              zIndex: zIndex
           };
           const sfxRows = dbInstance.exec(`SELECT file_name, file_id, loop, auto, volume FROM sprite_sfx WHERE sprite_id = ?`, [spriteId])[0]?.values || [];
           sfxRows.forEach(([file_name, file_id, loop, auto, volume]) => {

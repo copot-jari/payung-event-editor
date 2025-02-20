@@ -62,6 +62,8 @@ export async function initDatabase() {
       y INTEGER NOT NULL,
       width INTEGER NOT NULL,
       height INTEGER NOT NULL,
+      zIndex INTEGER NOT NULL,
+      flip BOOLEAN NOT NULL,
       focus BOOLEAN NOT NULL,
       animation_class TEXT,
       continuity_id TEXT,
@@ -153,12 +155,12 @@ export function saveStateToDB(db, connections) {
           }
 
           if (!!spriteFileId) {
-            db.run("INSERT INTO sprites (scene_node_id, file_id, x, y, width, height, focus, animation_class, continuity_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-              [id, spriteFileId, spriteData.x, spriteData.y, spriteData.width, spriteData.height, spriteData.focus, spriteData.animationClass, spriteData.continuityIdentifier]
+            db.run("INSERT INTO sprites (scene_node_id, file_id, x, y, width, height, focus, animation_class, continuity_id, flip, zIndex) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              [id, spriteFileId, spriteData.x, spriteData.y, spriteData.width, spriteData.height, spriteData.focus, spriteData.animationClass, spriteData.continuityIdentifier, spriteData.flip, spriteData.zIndex]
             );
           } else {
-            db.run("INSERT INTO sprites (scene_node_id, x, y, width, height, focus, animation_class, continuity_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-              [id, spriteData.x, spriteData.y, spriteData.width, spriteData.height, spriteData.focus, spriteData.animationClass, spriteData.continuityIdentifier]
+            db.run("INSERT INTO sprites (scene_node_id, x, y, width, height, focus, animation_class, continuity_id, flip, zIndex) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              [id, spriteData.x, spriteData.y, spriteData.width, spriteData.height, spriteData.focus, spriteData.animationClass, spriteData.continuityIdentifier, spriteData.flip, spriteData.zIndex]
             );
           }
           const spriteId = db.exec("SELECT last_insert_rowid()")[0].values[0][0];
