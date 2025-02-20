@@ -146,28 +146,8 @@
       </div>
 
 
-      <div class="collapsible-section">
-        <button type="button" class="section-header flex justify-between items-center w-full text-left text-lg font-bold mb-2">
-          Dialogue Details
-          <svg class="chevron w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-          </svg>
-        </button>
-        <div class="section-content">
-          <div id="dialogueContainer" class="mt-4">
-            <div class="speaker-input-container items-center">
-              <input id="speakerInput" type="text" placeholder="Speaker/Actor" class="w-full p-2" style="border-color: #3d444d; border-width: 1px; border-style: solid;">
-              <input type="color" id="speakerColorPicker" value="#ffffff" style="background-color: #3d444d; border: 1px solid #3d444d; border-radius: 5px; height: 30px; width: 40px;">
-            </div>
-            <div class="mt-2"></div>
-            <textarea id="dialogueInput" placeholder="Enter dialogue (Markdown supported)" class="w-full  h-48"></textarea>
-          </div>
-          <div id="nodeItems" class="space-y-2 mt-2"></div>
-          <button id="addItem" class="mt-4 bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-4 py-2 rounded">Add Choice</button>
-        </div>
-      </div>
 
-      <div class="collapsible-section mt-4">
+      <div class="collapsible-section">
         <button type="button" class="section-header flex justify-between items-center w-full text-left text-lg font-bold mb-2">
           Scene Editor
           <svg class="chevron w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -200,6 +180,28 @@
             </div>
             <div id="spriteList" class="mt-2 flex flex-wrap gap-2"></div>
           </div>
+        </div>
+      </div>
+
+      
+      <div class="collapsible-section  mt-4">
+        <button type="button" class="section-header flex justify-between items-center w-full text-left text-lg font-bold mb-2">
+          Dialogue Details
+          <svg class="chevron w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div class="section-content">
+          <div id="dialogueContainer" class="mt-4">
+            <div class="speaker-input-container items-center">
+              <input id="speakerInput" type="text" placeholder="Speaker/Actor" class="w-full p-2" style="border-color: #3d444d; border-width: 1px; border-style: solid;">
+              <input type="color" id="speakerColorPicker" value="#ffffff" style="background-color: #3d444d; border: 1px solid #3d444d; border-radius: 5px; height: 30px; width: 40px;">
+            </div>
+            <div class="mt-2"></div>
+            <textarea id="dialogueInput" placeholder="Enter dialogue (Markdown supported)" class="w-full  h-48"></textarea>
+          </div>
+          <div id="nodeItems" class="space-y-2 mt-2"></div>
+          <button id="addItem" class="mt-4 bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-4 py-2 rounded">Add Choice</button>
         </div>
       </div>
     </div>
