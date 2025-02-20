@@ -19,7 +19,7 @@ export function inheritPreviousNode() {
     )
     if (parentalConnection.length > 0) {
         const parentNode = window.nodes.filter(e => e.id == parentalConnection[0].from.nodeId)[0];
-        window.selectedNodeData.scene = parentNode.scene;
+        window.selectedNodeData.scene = JSON.parse(JSON.stringify(parentNode.scene));
         loadSceneForNode(window.selectedNodeData)
     }
 }
