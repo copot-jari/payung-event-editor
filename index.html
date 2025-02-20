@@ -104,6 +104,23 @@
       .speaker-input-container label {
         margin-right: 5px; 
       }
+
+    #canvasContainer {
+      position: relative;
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
+      /* 16:9 aspect ratio via padding-top */
+      padding-top: 56.25%;
+      background: #333;
+    }
+    /* The canvas is absolutely positioned within the container */
+    #sceneCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: #111;
+    }
     </style>
   </head>
   <body class="text-white bg-gray-100">
@@ -154,7 +171,11 @@
         <div class="section-content">
           <div class="w-full mt-2 flex flex-col gap-4 justify-center items-center">
             <p>Scene Editor</p>
-            <div id="sceneEditor" class="w-[calc(16*1.4vw)] h-[calc(9*1.4vw)]"></div>
+            <!-- <div id="sceneEditor" class="w-[calc(16*1.4vw)] h-[calc(9*1.4vw)]"></div> -->
+
+  <div id="canvasContainer">
+    <canvas id="sceneCanvas"></canvas>
+  </div>
             <div class="mt-2 flex gap-2">
               <div>
                 <input type="file" id="backgroundUpload" accept="image/*" class="hidden">
@@ -166,6 +187,9 @@
               </div>
               <div>
                 <button id="inheritPrevious" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-2 py-1 rounded">Inherit Previous</button>
+              </div>
+              <div>
+                <button id="Preview" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-2 py-1 rounded">Preview</button>
               </div>
             </div>
             <div id="spriteList" class="mt-2 flex flex-wrap gap-2"></div>
