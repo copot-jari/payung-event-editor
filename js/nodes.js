@@ -79,7 +79,6 @@ import { createRow } from "./items.js";
         });
         el.addEventListener("mousedown", e => {
             const sidebar = document.getElementById("sidebar");
-            if (!sidebar.classList.contains("hidden")) return;
             if (e.target.classList.contains("connector")) return;
             isDragging = true;
             offsetX = e.clientX - el.offsetLeft;
