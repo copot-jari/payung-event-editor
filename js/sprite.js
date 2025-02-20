@@ -278,6 +278,8 @@ const uploadSprite = document.getElementById('uploadSprite');
 uploadSprite.addEventListener('click', () => spriteUpload.click());
 spriteUpload.addEventListener('change', (e) => {
     const file = e.target.files[0];
+    e.target.value = null;
+    console.log(file)
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
