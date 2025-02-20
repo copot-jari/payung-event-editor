@@ -129,7 +129,7 @@ function getCanvasCoordinates(event) {
     };
 }
 
-sidebar.addEventListener('mousedown', (e) => {
+window.addEventListener('mousedown', (e) => {
     const {
         x,
         y
@@ -169,7 +169,7 @@ sidebar.addEventListener('mousedown', (e) => {
     }
 });
 
-sidebar.addEventListener('mousemove', (e) => {
+window.addEventListener('mousemove', (e) => {
 
     if (!draggingSprite && !resizingSprite) {
         const {
@@ -215,13 +215,13 @@ sidebar.addEventListener('mousemove', (e) => {
     }
 });
 
-sidebar.addEventListener('mouseup', () => {
+window.addEventListener('mouseup', () => {
     draggingSprite = null;
     resizingSprite = null;
 });
 
 
-sidebar.addEventListener('dblclick', (e) => {
+window.addEventListener('dblclick', (e) => {
     const {
         x,
         y
