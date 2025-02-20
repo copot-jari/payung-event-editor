@@ -62,16 +62,20 @@ export function createRow(nodeData, details = {}, svg, connections, prevId) {
         document.removeEventListener('mouseup', handleMouseUp);
 
         const endElement = document.elementFromPoint(e.clientX, e.clientY);
+        console.log(endElement)
         if (endElement && endElement.classList.contains('node-input-connector') || endElement && endElement.classList.contains('node') || endElement && endElement.parentElement.classList.contains('node')) {
             console.log(endElement)
             const targetNodeElement = endElement.closest('.node');
+            console.log("HHHHH")
+            console.log(targetNodeElement)
             if (targetNodeElement && node !== targetNodeElement) {
-                const targetNodeData = nodes.find(n => n.element === targetNodeElement);
+                const targetNodeData = window.nodes.find(n => n.element === targetNodeElement);
                 if (targetNodeData) {
                     details.connectionTarget = targetNodeData.id;
+                    console.log(details.connectionTarget)
                     if (details.connectionTarget) {
                         console.log(details.connectionTarget)
-                        const targetNode = nodes.find(n => n.id === details.connectionTarget);
+                        const targetNode = window.nodes.find(n => n.id === details.connectionTarget);
                         if (targetNode) {
                             console.log(targetNode)
                             const rect = outConnector.getBoundingClientRect();
