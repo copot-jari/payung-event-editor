@@ -1,5 +1,5 @@
 import { deleteNode, duplicateNode, makeDraggable, selectNode } from "./nodes.js";
-import { commitSceneChangesToNodeData } from "./sprite.js";
+import { commitSceneChangesToNodeData, loadSceneForNode } from "./sprite.js";
 import { $, connections, duplicateNodeButton, editItemModal, editor, sidebar, spriteDetailModal, uiConfig } from "./app.js";
 
 export function closeSidebar() {
@@ -11,6 +11,17 @@ export function closeSidebar() {
     spriteDetailModal.classList.add(uiConfig.classes.hidden);
     editor.style.transform = "";
     $('rightButtonContainer').classList.remove("hidden")
+}
+
+export function inheritPreviousNode() {
+    const parentalConnection = connections.filter(e => 
+        e.to.nodeId == window.selectedNodeData.id
+    )
+    if (parentalConnection.length > 0) {
+        const parentNode = window.nodes.filter(e => e.id == parentalConnection[0].from.nodeId)[0];
+        window.selectedNodeData.scene = parentNode.scene;
+        loadSceneForNode(window.selectedNodeData)
+    }
 }
 
 export function iniializeSidebar() {
@@ -48,6 +59,7 @@ export function iniializeSidebar() {
         $(uiConfig.selectors.cancelDeleteNodeButton).addEventListener('click', () => {
             $(uiConfig.selectors.deleteNodeModal).classList.add(uiConfig.classes.hidden); 
         });
+        $('inheritPrevious').addEventListener('click', inheritPreviousNode)
     });
 
     duplicateNodeButton.addEventListener("click", () => {
