@@ -20,6 +20,7 @@ Bugs and glitches:
 - [X] Drag connection doesn't work
 - [ ] When a sprite is deleted it cannot be added back until two scenes is focued and unfocused
 - [ ] After deleting a scene, all existing scenes are normal but adding a new scene causes it to no be able to be connected
+- [ ] SFX is not yet implemented in the scene preview
 
 ## Features
 Todo List:
@@ -36,9 +37,6 @@ Todo List:
 - [X] Color coded actor
 - [X] Scene title
 - [X] Script Parser
-- [ ] Flags gained
-- [ ] Flags remove
-- [ ] Item gain
-- [ ] Item remove
-- [ ] Scene Preview
+- [X] Scene Preview
+- [ ] Change sprite src without changing the position
 
