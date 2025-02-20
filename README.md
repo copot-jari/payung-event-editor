@@ -18,8 +18,8 @@ Bugs and glitches:
 - [ ] SFX must be readded each time user edits detail sprite
 - [X] Sometimes the line goes off
 - [X] Drag connection doesn't work
-- [ ] When a sprite is deleted it cannot be added back until two scenes is focued and unfocused
-- [ ] After deleting a scene, all existing scenes are normal but adding a new scene causes it to no be able to be connected
+- [X] When a sprite is deleted it cannot be added back until two scenes is focued and unfocused
+- [X] After deleting a scene, all existing scenes are normal but adding a new scene causes it to no be able to be connected
 - [ ] SFX is not yet implemented in the scene preview
 - [ ] Actor/Speaker color is not saved
 

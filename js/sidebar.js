@@ -79,7 +79,8 @@ export function iniializeSidebar() {
 
 }
 
-function previewFlow(db, startingNodeId) {        
+function previewFlow(db, startingNodeId) {     
+    commitSceneChangesToNodeData();   
     var viewerWindow = window.open("", "VNViewer", "width=1280,height=720");
     viewerWindow.nodes = window.nodes;
     viewerWindow.firstNode = startingNodeId;
