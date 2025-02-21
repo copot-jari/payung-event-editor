@@ -39,5 +39,5 @@ Todo List:
 - [X] Scene title
 - [X] Script Parser
 - [X] Scene Preview
-- [ ] Change sprite src without changing the position
+- [X] Change sprite src without changing the position
 
