@@ -12,14 +12,7 @@ A simple node editor module for payung event datatype. To be integrated with Pay
 
 ## Known Issues
 Bugs and glitches:
-- [x] Focus outline does not dissapear sometimes
-- [x] Relational line is drawn incorrectly if zoom changes from default
-- [x] Scene, dialogues et cetera is not saved when saving db
 - [ ] SFX must be readded each time user edits detail sprite
-- [X] Sometimes the line goes off
-- [X] Drag connection doesn't work
-- [X] When a sprite is deleted it cannot be added back until two scenes is focued and unfocused
-- [X] After deleting a scene, all existing scenes are normal but adding a new scene causes it to no be able to be connected
 - [ ] SFX is not yet implemented in the scene preview
 - [ ] Actor/Speaker color is not saved
 
