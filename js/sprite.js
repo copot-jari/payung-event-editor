@@ -56,10 +56,13 @@ function updateSpriteMesh(sprite) {
             sprite.y + sprite.height / 2,
             sprite.zIndex !== undefined ? sprite.zIndex : 0
         );
-        
+        crossFadeTexture(sprite, sprite.image.src)
+
         
         const scaleX = sprite.flip ? -sprite.width : sprite.width;
         sprite.mesh.scale.set(scaleX, sprite.height, 1);
+
+        sprite.mesh.sr
 
         sprite.mesh.material.color.setScalar(sprite.focus ? 1.0 : 0.5);
     }
@@ -450,6 +453,20 @@ addSpriteSfxBtn.addEventListener('click', () => addSpriteSfxRow());
 
 saveSpriteDetailsBtn.addEventListener('click', () => {
     if (!currentSprite) return;
+    if (document.getElementById('spriteUpdate').files.length > 0) {
+
+        let newFile = document.getElementById('spriteUpdate').files[0];
+        document.getElementById('spriteUpdate').value = null
+        const newSpriteReader = new FileReader();
+        newSpriteReader.onload = (event) => {
+            const imageSrc = event.target.result;
+            currentSprite.image.src = imageSrc;
+        };
+        newSpriteReader.onerror = (error) => {
+            console.error('Error reading file:', error);
+        };
+        newSpriteReader.readAsDataURL(newFile);
+    }
     currentSprite.focus = spriteFocusToggle.checked;
     currentSprite.animationClass = spriteAnimClassInput.value;
     currentSprite.continuityIdentifier = spriteContinuityIdentifierInput.value;
@@ -551,6 +568,17 @@ export function loadSceneForNode(nodeData) {
             addSpriteThumbnail(sprite, spriteData.src);
         };
         img.src = spriteData.src;
+    });
+}
+
+function crossFadeTexture(sprite, newSrc, duration, animationClass) {
+    const loader = new THREE.TextureLoader();
+    loader.load(newSrc, (newTexture) => {
+        newTexture.flipY = true;
+        newTexture.colorSpace = THREE.SRGBColorSpace;
+        sprite.image = newTexture.image;
+        sprite.mesh.material.map = newTexture;
+        sprite.mesh.material.needsUpdate = true;
     });
 }
 
