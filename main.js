@@ -6,7 +6,7 @@ const expressApp = express();
 const http = require('http');
 
 const server = http.createServer(expressApp);
-const port = 3000;
+const port = 5489;
 
 let mainWindow;
 
@@ -17,7 +17,8 @@ expressApp.use((req, res, next) => {
   next();
 });
 
-expressApp.use(express.static('./'));
+
+expressApp.use(express.static(path.join(__dirname, "/")));
 
 server.listen(port, () => {
   console.log(`Express server running on port ${port}`);
@@ -52,79 +53,6 @@ function createWindow() {
 
   const template = [
     {
-      label: 'File',
-      submenu: [
-        {
-          label: 'New Project',
-          accelerator: 'CmdOrCtrl+N',
-          click() {
-            mainWindow.loadURL(`http://localhost:${port}/menu.html`);
-          }
-        },
-        {
-          label: 'Open Project',
-          accelerator: 'CmdOrCtrl+O',
-          click() {
-            dialog.showOpenDialog({
-              properties: ['openFile'],
-              filters: [
-                { name: 'Project Files', extensions: ['json', 'db'] }
-              ]
-            }).then(result => {
-              if (!result.canceled && result.filePaths.length > 0) {
-                mainWindow.webContents.send('open-project', result.filePaths[0]);
-              }
-            }).catch(err => {
-              console.error(err);
-            });
-          }
-        },
-        {
-          label: 'Save Project',
-          accelerator: 'CmdOrCtrl+S',
-          click() {
-            mainWindow.webContents.send('save-project');
-          }
-        },
-        { type: 'separator' },
-        {
-          label: 'Exit',
-          accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Alt+F4',
-          click() {
-            app.quit();
-          }
-        }
-      ]
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
-        { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-        { role: 'delete' },
-        { type: 'separator' },
-        { role: 'selectAll' }
-      ]
-    },
-    {
-      label: 'View',
-      submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { role: 'toggleDevTools' },
-        { type: 'separator' },
-        { role: 'resetZoom' },
-        { role: 'zoomIn' },
-        { role: 'zoomOut' },
-        { type: 'separator' },
-        { role: 'togglefullscreen' }
-      ]
-    },
-    {
       label: 'Help',
       submenu: [
         {
@@ -132,7 +60,7 @@ function createWindow() {
           click() {
             dialog.showMessageBox({
               title: 'About Event Editor',
-              message: 'Event Editor v1.0.0\na tool for creating and editing events.',
+              message: 'Please submit bug at the repository i will try my best to fix it.',
               buttons: ['OK']
             });
           }
