@@ -7,6 +7,7 @@
 [![HTML](https://img.shields.io/badge/HTML-%23E34F26.svg?logo=html5&logoColor=white)](#)
 [![SQLite](https://img.shields.io/badge/SQLite-%2307405e.svg?logo=sqlite&logoColor=white)](#)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind%20CSS-%2338B2AC.svg?logo=tailwind-css&logoColor=white)](#)
+[![Electron](https://img.shields.io/badge/Electron-47848F?logo=electron&logoColor=white)](#)
 
 A simple node editor module for payung event datatype. To be integrated with Payung engine later on for Visual Novel and RPGM type game.
 
@@ -21,7 +22,7 @@ A simple node editor module for payung event datatype. To be integrated with Pay
 
 **To Do:**
 
-*   [ ] Implement Mouse Area Selection for Nodes
+*   [X] Implement Mouse Area Selection for Nodes
 *   [ ] Delete nodes with keyboard (Delete key)
 *   [X] Middle-click to pan the editor view (implemented in payung)
 *   [ ] Context menu for copy/paste and bulk delete operations

@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Payung Dialog Composer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
+    <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/lint.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/lint.min.css">
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.173.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.173.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script src="https://unpkg.com/@heroicons/v2/24/outline/esm/index.js"></script>
+    <style>
+      /* Modal overlay styles */
+      .custom-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+      }
+      .custom-modal-overlay.show {
+        opacity: 1;
+        pointer-events: all;
+      }
+      /* Modal box styling */
+      .custom-modal {
+        background: #fff;
+        border-radius: 5px;
+        width: 300px;
+        padding: 20px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.25);
+        text-align: center;
+        font-family: sans-serif;
+      }
+      .custom-modal p {
+        margin-bottom: 20px;
+      }
+      .custom-modal button {
+        margin: 0 10px;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .custom-modal button.ok {
+        background-color: #2196F3;
+        color: #fff;
+      }
+      .custom-modal button.confirm {
+        background-color: #4CAF50;
+        color: #fff;
+      }
+      .custom-modal button.cancel {
+        background-color: #f44336;
+        color: #fff;
+      }
+      body {
+        overflow: overlay;
+      }
+      body::-webkit-scrollbar {
+        width: 3px;
+        height: 3px;
+        background-color: #030712;
+        opacity: 0;
+      }
+      body::-webkit-scrollbar-thumb {
+        background-color: white;
+        transition: background-color 0.2s ease;
+      }
+      input, textarea, select { 
+        border-radius: 5px;
+        padding: 4px 12px !important;
+        background-color: #030712;
+        border-color: #3d444d !important;
+        color: white; 
+      }
+      select {
+        border-radius: 5px;
+        padding: 4px 12px !important;
+        background-color: #030712;
+        border-color: #3d444d;
+      }
+      .node {
+        width: 200px;
+      }
+      .connector {
+        width: 12px;
+        height: 12px;
+      }
+      .CodeMirror-cursor {
+        border-left: 1px solid white;
+        border-right: 1px solid white;
+      }
+      .cm-editor .cm-cursor {
+        border-left-color: white
+      }
+      .EasyMDEContainer .editor-preview {
+        background-color: #030712 !important;
+        border-color: #3d444d !important;
+        caret-color: white !important;
+        color: #f8f8f2;
+      }
+      .CodeMirror {
+        background-color: #030712 !important;
+        border-color: #3d444d !important;
+        color: #f8f8f2 !important;
+        caret-color: white !important;
+      }
+      .CodeMirror-gutters {
+        background-color: #030712 !important;
+        border-color: #3d444d !important;
+        border-right: 1px solid #444 !important;
+        caret-color: white !important;
+      }
+      .EasyMDEContainer .editor-preview {
+        background-color: #030712 !important;
+        border-color: #3d444d !important;
+        caret-color: white !important;
+        color: #f8f8f2 !important;
+      }
+      #editor {
+        --dot-bg: #030712;
+        --dot-color: #babdc8;
+        --dot-size: 1px;
+        --dot-space: 32px;
+        background:
+          linear-gradient(90deg, var(--dot-bg) calc(var(--dot-space) - var(--dot-size)), transparent 1%) center / var(--dot-space) var(--dot-space),
+          linear-gradient(var(--dot-bg) calc(var(--dot-space) - var(--dot-size)), transparent 1%) center / var(--dot-space) var(--dot-space),
+          var(--dot-color);
+      }
+      #sceneEditor {
+        border-radius: 5px;
+        padding: 4px 12px;
+        background-color: #030712;
+        border-color: #3d444d;
+        overflow: hidden;
+      }
+      .EasyMDEContainer {
+        resize: vertical; 
+        overflow: auto; 
+        min-height: 150px; 
+      }
+      .speaker-input-container {
+        display: flex; 
+        gap: 10px; 
+        align-items: center; 
+      }
+      .speaker-input-container label {
+        margin-right: 5px; 
+      }
+
+    #canvasContainer {
+      position: relative;
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding-top: 56.25%;
+      background: #333;
+    }
+    #sceneCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: #111;
+    }
+    
+    /* Selection rectangle styles */
+    .selection-rectangle {
+      position: absolute;
+      border: 1px solid #3b82f6;
+      background-color: rgba(59, 130, 246, 0.1);
+      pointer-events: none;
+      z-index: 999;
+    }
+    
+    .node.selected {
+      border: 2px solid #3b82f6 !important;
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+    }
+    
+    .node.temp-selected {
+      border: 2px solid #93c5fd !important;
+      box-shadow: 0 0 5px rgba(147, 197, 253, 0.5);
+    }
+    
+    #editor {
+      cursor: default;
+    }
+    
+    #editor.selecting {
+      cursor: crosshair;
+    }
+    
+    .node.selected {
+      cursor: move;
+    }
+    
+    .node {
+      z-index: 0;
+    }
+    
+    .node.dragging {
+      z-index: 1000;
+    }
+    #variables-tab {
+      display: none;
+    }
+    </style>
+  </head>
+  <body class="text-white bg-gray-100">
+    <div id="editor" class="w-[100000px] h-[100000px] relative">
+      <svg id="connections" class="absolute w-[100000px] h-[100000px] inset-0 pointer-events-none"></svg>
+    </div>
+
+    <div id="sidebar" class="fixed right-0 top-0 w-[477px] h-screen bg-white backdrop-blur-3xl bg-opacity-5 border-l border-[#343740] shadow-lg overflow-hidden transform transition-all duration-300 hidden">
+      <div class="p-4 border-b border-[#343740]">
+        <div class="flex gap-3 justify-between items-center">
+          <h2 id="nodeTitle" class="text-xl truncate font-bold"></h2>
+          <div class="flex gap-2">
+            <button id="duplicateNode" class="bg-orange-700 bg-opacity-50 hover:bg-opacity-100 transition border-orange-700 border text-white px-3 py-1.5 rounded text-sm">Duplicate</button>
+            <button id="deleteNodeButtonSidebar" class="bg-red-700 bg-opacity-50 hover:bg-opacity-100 transition border-red-700 border text-white px-3 py-1.5 rounded text-sm">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex border-b border-[#343740] relative">
+        <button class="tab-button active flex-1 px-4 py-2 text-sm font-medium text-white/70 hover:text-white flex items-center justify-center gap-2" data-tab="scene">
+          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+          </svg>
+          Scene
+        </button>
+        <button class="tab-button flex-1 px-4 py-2 text-sm font-medium text-white/70 hover:text-white flex items-center justify-center gap-2" data-tab="dialogue">
+          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+          </svg>
+          Dialogue
+        </button>
+        <button class="tab-button flex-1 px-4 py-2 text-sm font-medium text-white/70 hover:text-white flex items-center justify-center gap-2" data-tab="choices">
+          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15 12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+          </svg>
+          Choices
+        </button>
+        <button class="tab-button flex-1 px-4 py-2 text-sm font-medium text-white/70 hover:text-white flex items-center justify-center gap-2" id="var-tab" data-tab="variables">
+          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+          </svg>
+          ...?
+        </button>
+        <div class="tab-indicator absolute bottom-0 left-0 h-0.5 bg-blue-500 transition-all duration-300" style="width: 25%;"></div>
+      </div>
+
+      <div class="overflow-auto h-[calc(100vh-120px)]">
+        <div id="scene-tab" class="tab-content p-4">
+          <div class="collapsible-section">
+            <button type="button" class="section-header flex justify-between items-center w-full text-left text-sm font-medium p-2 bg-opacity-10 bg-white rounded">
+              Scene Editor
+              <svg class="chevron w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+            <div class="section-content p-2">
+              <div class="w-full flex flex-col gap-4 justify-center items-center">
+                <p>Scene Editor</p>
+                <div id="canvasContainer">
+                  <canvas id="sceneCanvas"></canvas>
+                </div>
+                <div class="mt-2 flex gap-2">
+                  <div>
+                    <input type="file" id="backgroundUpload" accept="image/*" class="hidden">
+                    <button id="uploadBackground" class="bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-2 py-1 rounded">Background</button>
+                  </div>
+                  <div>
+                    <input type="file" id="spriteUpload" accept="image/*" class="hidden">
+                    <button id="uploadSprite" class="hidden bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-2 py-1 rounded">Sprite</button>
+                  </div>
+                  <div>
+                    <button id="inheritPrevious" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-2 py-1 rounded">Inherit</button>
+                  </div>
+                  <div>
+                    <button id="Preview" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-2 py-1 rounded">Preview</button>
+                  </div>
+                </div>
+                
+                <div class="mt-4 border border-[#343740] rounded-md bg-[#0f1117] overflow-hidden">
+                  <div class="bg-[#1a1c23] px-3 py-2 border-b border-[#343740] flex justify-between items-center">
+                    <h3 class="text-sm font-medium text-white">Scene Sprites</h3>
+                    <div>
+                      <button id="addSpriteBtn" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Sprite
+                      </button>
+                    </div>
+                  </div>
+                  <div class="p-3">
+                    <div id="spriteList" class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[200px] overflow-y-auto p-1"></div>
+                    <div id="emptySpritesMessage" class="text-center py-4 text-gray-500 text-sm hidden">
+                      No sprites added yet. Click "Add Sprite" to add sprites to your scene.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="dialogue-tab" class="tab-content hidden p-4">
+          <div id="dialogueContainer">
+            <div class="speaker-input-container items-center bg-opacity-10 bg-white p-2 rounded">
+              <input id="speakerInput" type="text" placeholder="Speaker/Actor" class="flex-1 p-2 bg-[#030712] rounded text-sm">
+              <input type="color" id="speakerColorPicker" value="#ffffff" class="w-10 h-8 rounded bg-[#030712] border border-[#3d444d]">
+            </div>
+            <div class="mt-4">
+              <textarea id="dialogueInput" placeholder="Enter dialogue (Markdown supported)" class="w-full h-48 bg-[#030712] rounded text-sm"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div id="choices-tab" class="tab-content hidden p-4">
+          <div id="nodeItems" class="space-y-2"></div>
+          <button id="addItem" class="mt-4 w-full bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-3 py-1.5 rounded text-sm">Add Choice</button>
+        </div>
+
+        <div id="variables-tab" class="tab-content hidden p-4">
+          <div class="mb-4">
+            <h3 class="text-lg font-semibold mb-2">Variable Changes</h3>
+            <p class="text-sm text-gray-400 mb-4">Define variable changes that will occur when this node is triggered.</p>
+            <div id="nodeVariableChanges" class="space-y-2 max-h-[400px] overflow-y-auto"></div>
+            <button id="addVariableChange" class="mt-4 w-full bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-3 py-1.5 rounded text-sm">Add Variable Change</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="editItemModal" class="fixed hidden left-0 top-0 w-full h-full bg-black bg-opacity-50 backdrop-blur-sm justify-center items-center flex">
+      <div class="bg-[#030712] p-8 rounded-lg shadow-lg border border-[#343740] w-[900px]">
+        <h2 class="text-xl font-bold mb-4">Edit Choice</h2>
+        <div class="mb-4">
+          <label for="itemTitleInput" class="block text-sm font-medium mb-1">Title</label>
+          <input id="itemTitleInput" type="text" class="w-full p-2 bg-gray-800 border border-gray-600 rounded" placeholder="Enter choice title" />
+        </div>
+        <div id="conditionsSection">
+          <h3 class="font-bold">Conditions</h3>
+          <div id="conditionsList" class="space-y-2 mt-2"></div>
+          <button id="addCondition" class="bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-2 py-1 rounded mt-2">Add Condition</button>
+        </div>
+        <div id="flagsSection" class="hidden mt-4">
+          <h3 class="font-bold">Flags</h3>
+          <div id="flagsList" class="space-y-2 mt-2"></div>
+          <button id="addFlag" class="bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-2 py-1 rounded mt-2">Add Flag</button>
+        </div>
+        <div class="mt-4 flex justify-end gap-2">
+          <button id="deleteItem" class="bg-red-700 bg-opacity-50 hover:bg-opacity-100 transition border-red-700 border text-white px-4 py-2 rounded">Delete</button>
+          <button id="confirmItem" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-4 py-2 rounded">Save</button>
+        </div>
+      </div>
+    </div>
+    <div id="deleteNodeModal" class="fixed hidden left-0 top-0 w-full h-full bg-black bg-opacity-50 backdrop-blur-sm justify-center items-center flex">
+      <div class="bg-[#030712] p-8 rounded-lg shadow-lg border border-[#343740]">
+        <h2 class="text-xl font-bold mb-4">Confirm Delete</h2>
+        <p class="mb-4">Are you sure you want to delete this node?</p>
+        <div class="flex justify-end gap-2">
+          <button id="cancelDeleteNode" class="bg-gray-700 bg-opacity-50 hover:bg-opacity-100 transition border-gray-700 border text-white px-4 py-2 rounded">Cancel</button>
+          <button id="confirmDeleteNode" class="bg-red-700 bg-opacity-50 hover:bg-opacity-100 transition border-red-700 border text-white px-4 py-2 rounded">Delete</button>
+        </div>
+      </div>
+    </div>
+    <div id="spriteDetailModal" class="fixed hidden left-0 top-0 w-full h-full bg-black bg-opacity-50 backdrop-blur-sm justify-center items-center flex">
+      <div class="bg-[#030712] p-8 rounded-lg shadow-lg border border-[#343740] w-[900px]">
+        <h2 class="text-xl font-bold mb-4">Sprite Details</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-4">
+            <div>
+              <label for="spriteZIndexInput" class="block text-sm font-medium mb-1">Z-Index</label>
+              <input id="spriteZIndexInput" type="number" class="w-full p-2 bg-[#1a1c23] border border-[#343740] rounded" placeholder="Enter z index" />
+            </div>
+            
+            <div>
+              <label for="spriteContinuityIdentifierInput" class="block text-sm font-medium mb-1">Continuity ID</label>
+              <input id="spriteContinuityIdentifierInput" type="text" class="w-full p-2 bg-[#1a1c23] border border-[#343740] rounded" placeholder="Enter continuity identifier" />
+            </div>
+            
+            <div class="flex space-x-4">
+              <div class="flex-1">
+                <label for="spriteFocusToggle" class="block text-sm font-medium mb-1">Focus</label>
+                <div class="flex items-center p-2 bg-[#1a1c23] border border-[#343740] rounded">
+                  <input id="spriteFocusToggle" type="checkbox" class="mr-2 h-4 w-4 accent-blue-500" />
+                  <span class="text-sm">Focused</span>
+                </div>
+              </div>
+              
+              <div class="flex-1">
+                <label for="spriteFlipToggle" class="block text-sm font-medium mb-1">Flip</label>
+                <div class="flex items-center p-2 bg-[#1a1c23] border border-[#343740] rounded">
+                  <input id="spriteFlipToggle" type="checkbox" class="mr-2 h-4 w-4 accent-blue-500" />
+                  <span class="text-sm">Flipped</span>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <label id="updateSprite" for="spriteUpdate" class="block bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition cursor-pointer border-blue-700 border text-white px-2 py-2 rounded text-center">
+                <div class="flex items-center justify-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Change Sprite Image
+                </div>
+              </label>
+              <input type="file" id="spriteUpdate" accept="image/*" class="hidden">
+            </div>
+          </div>
+          
+          <div class="space-y-4">
+            <div>
+              <label for="spriteAnimClassSelect" class="block text-sm font-medium mb-1">Animation</label>
+              <select id="spriteAnimClassSelect" class="w-full p-2 bg-[#1a1c23] border border-[#343740] rounded">
+                <option value="">None</option>
+                <option value="enter_fade">Fade In</option>
+                <option value="fx_surprised">Surprised</option>
+                <!-- Additional animations will be populated dynamically -->
+              </select>
+            </div>
+            
+            <div id="animationPreviewContainer" class="border border-[#343740] rounded p-2 h-32 flex items-center justify-center bg-[#0f1117]">
+              <div id="animationPreview" class="relative">
+                <div class="text-gray-500 text-sm text-center">Select an animation to preview</div>
+                <div id="animationPreviewSprite" class="hidden"></div>
+              </div>
+            </div>
+            
+            <div>
+              <label for="spriteAnimClassInput" class="block text-sm font-medium mb-1">Custom Animation</label>
+              <input id="spriteAnimClassInput" type="text" class="w-full p-2 bg-[#1a1c23] border border-[#343740] rounded" placeholder="Custom animation class (advanced)" />
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 flex justify-end gap-2">
+          <button id="saveSpriteDetailsBtn" class="bg-[#1a1c23] hover:bg-[#252830] transition border-[#343740] border text-white px-4 py-2 rounded">Close</button>
+          <button id="closeSpriteDetailModal" class="hidden bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-4 py-2 rounded">Close</button>
+        </div>
+      </div>
+    </div>
+    <div id="variableEditorModal" class="fixed hidden left-0 top-0 w-full h-full bg-black bg-opacity-50 backdrop-blur-sm justify-center items-center flex">
+      <div class="bg-[#030712] p-8 rounded-lg shadow-lg border border-[#343740] w-[600px]">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold">Variable Editor</h2>
+          <button id="closeVariableEditor" class="text-gray-400 hover:text-white">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Global Variables</h3>
+            <button id="addVariable" class="bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-3 py-1 rounded">
+              Add Variable
+            </button>
+          </div>
+          <div id="variablesList" class="space-y-2 max-h-[400px] overflow-y-auto">
+          </div>
+        </div>
+        <div class="mt-6 flex justify-end gap-2">
+          <button id="saveVariables" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-4 py-2 rounded">
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="parseScriptModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+      <div class="bg-[#030712] p-6 rounded-lg border border-[#343740] w-1/3">
+        <h2 class="text-xl font-bold mb-4">Parse Dialogue Script</h2>
+        <div id="scriptInputContainer" class="w-full h-48 mb-4">
+          <textarea id="scriptInput" placeholder="Format: 'actor: dialog'&#10;&#10;Empty line between blocks creates separate groups.&#10;Example:&#10;John: Hello there!&#10;Mary: Hi John!&#10;&#10;John: How are you?&#10;Mary: I'm good!"></textarea>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button id="parseScriptClose" class="bg-red-700 hover:bg-red-800 transition border text-white px-4 py-2 rounded">Cancel</button>
+          <button id="parseScriptSubmit" class="bg-green-700 hover:bg-green-800 transition border text-white px-4 py-2 rounded">Parse</button>
+        </div>
+      </div>
+    </div>
+    <div id="rightButtonContainer" class="fixed bottom-4 left-4 flex space-x-2">
+      <div class="flex space-x-2">
+        <button id="addNode" class="bg-lime-700 bg-opacity-50 hover:bg-opacity-100 transition border-lime-700 border text-white px-4 py-2 rounded">Add Dialogue</button>
+        <button id="parseScript" class="bg-lime-700 bg-opacity-50 hover:bg-opacity-100 transition border-lime-700 border text-white px-4 py-2 rounded">
+          Parse Script
+        </button>
+    </div>
+    <div id="rightButtonContainer" class="fixed bottom-4 right-4 flex space-x-2">
+      <div class="flex space-x-2">
+        <button id="saveDB" class="bg-purple-700 bg-opacity-50 border border-purple-700 hover:bg-opacity-100 transition text-white px-4 py-2 rounded">Save Project</button>
+      </div>
+      <button id="returnToMenu" class="bg-blue-700 bg-opacity-50 border border-blue-700 hover:bg-opacity-100 transition text-white px-4 py-2 rounded">Return to Menu</button>
+    </div>
+    <input type="file" id="dbFileInput" class="hidden" />
+    <!-- Custom Alert Modal -->
+    <div id="customAlertModal" class="custom-modal-overlay">
+      <div class="custom-modal">
+        <p id="customAlertMessage">Alert message</p>
+        <button class="ok">OK</button>
+      </div>
+    </div>
+    <!-- Custom Confirm Modal -->
+    <div id="customConfirmModal" class="custom-modal-overlay">
+      <div class="custom-modal">
+        <p id="customConfirmMessage">Confirm message?</p>
+        <button class="confirm">Yes</button>
+        <button class="cancel">No</button>
+      </div>
+    </div>
+    <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/sprite.js"></script>
+
+    <script>
+      // Custom alert: returns a Promise that resolves when the user clicks OK
+      window.customAlert = function(message) {
+        return new Promise(function(resolve) {
+          const modal = document.getElementById('customAlertModal');
+          const msg = document.getElementById('customAlertMessage');
+          msg.textContent = message;
+          modal.classList.add('show');
+          const okButton = modal.querySelector('button.ok');
+          okButton.focus();
+  
+          function closeAlert() {
+            modal.classList.remove('show');
+            okButton.removeEventListener('click', onOk);
+            resolve();
+          }
+          function onOk() {
+            closeAlert();
+          }
+          okButton.addEventListener('click', onOk);
+        });
+      };
+  
+      // Custom confirm: returns a Promise that resolves to true (yes) or false (no)
+      window.customConfirm = async function(message) {
+        return new Promise(function(resolve) {
+          const modal = document.getElementById('customConfirmModal');
+          const msg = document.getElementById('customConfirmMessage');
+          msg.textContent = message;
+          modal.classList.add('show');
+          const confirmButton = modal.querySelector('button.confirm');
+          const cancelButton = modal.querySelector('button.cancel');
+          confirmButton.focus();
+  
+          function cleanup() {
+            modal.classList.remove('show');
+            confirmButton.removeEventListener('click', onConfirm);
+            cancelButton.removeEventListener('click', onCancel);
+          }
+          function onConfirm() {
+            cleanup();
+            resolve(true);
+          }
+          function onCancel() {
+            cleanup();
+            resolve(false);
+          }
+          confirmButton.addEventListener('click', onConfirm);
+          cancelButton.addEventListener('click', onCancel);
+        });
+      };
+  
+      // Override the native alert and confirm (optional)
+      window.alert = function(message) {
+        return window.customAlert(message);
+      };
+      window.confirm = function(message) {
+        return window.customConfirm(message);
+      };
+  
+      const tabButtons = document.querySelectorAll('.tab-button');
+      const tabIndicator = document.querySelector('.tab-indicator');
+      
+      tabButtons.forEach((button, index) => {
+        button.addEventListener('click', () => {
+          // 
+          tabButtons.forEach(btn => {
+            btn.classList.remove('active');
+            btn.classList.remove('text-white');
+            btn.classList.add('text-white/70');
+          });
+          document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+          
+          
+          button.classList.add('active');
+          button.classList.remove('text-white/70');
+          button.classList.add('text-white');
+          document.getElementById(`${button.dataset.tab}-tab`).classList.remove('hidden');
+          
+          
+          tabIndicator.style.transform = `translateX(${index * 100}%)`;
+        });
+      });
+
+      
+      const activeTabIndex = Array.from(tabButtons).findIndex(btn => btn.classList.contains('active'));
+      if (activeTabIndex >= 0) {
+        tabIndicator.style.transform = `translateX(${activeTabIndex * 100}%)`;
+      }
+
+      
+      document.querySelectorAll('.section-header').forEach(header => {
+        header.addEventListener('click', () => {
+          const content = header.nextElementSibling;
+          content.classList.toggle('hidden');
+          const chevron = header.querySelector('.chevron');
+          chevron.classList.toggle('rotate-180');
+        });
+      });
+
+      
+      document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const projectPath = urlParams.get('project');
+        
+        if (projectPath) {
+          
+          console.log('Loading project from path:', projectPath);
+          
+        }
+      });
+    </script>
+    <script src="js/renderer.js"></script>
+  </body>
+</html>

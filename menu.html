@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Payung Dialog Composer - Project Launcher</title>
+    <!-- Using one consistent font -->
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Global Styles */
+      body {
+        font-family: 'Open Sans', sans-serif;
+        overflow: overlay;
+        background-color: #030712;
+        color: white;
+      }
+      body::-webkit-scrollbar {
+        width: 3px;
+        height: 3px;
+        background-color: #030712;
+      }
+      body::-webkit-scrollbar-thumb {
+        background-color: white;
+        transition: background-color 0.2s ease;
+      }
+      input, textarea, select {
+        border-radius: 5px;
+        padding: 0.4rem 0.75rem;
+        background-color: rgba(3, 7, 18, 0.9);
+        border: 1px solid rgba(61, 68, 77, 0.7);
+        color: white;
+        font-size: 0.875rem;
+      }
+      
+      .project-card {
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(61, 68, 77, 0.7);
+        transition: all 0.2s ease;
+      }
+      .project-card:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      
+      .main-container {
+        --dot-bg: #030712;
+        --dot-color: #babdc8;
+        --dot-size: 1px;
+        --dot-space: 32px;
+        background:
+          linear-gradient(90deg, var(--dot-bg) calc(var(--dot-space) - var(--dot-size)), transparent 1%) center / var(--dot-space) var(--dot-space),
+          linear-gradient(var(--dot-bg) calc(var(--dot-space) - var(--dot-size)), transparent 1%) center / var(--dot-space) var(--dot-space),
+          var(--dot-color);
+      }
+      
+      /* Splash Screen */
+      #splash-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #030712;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transition: transform 0.5s ease-out;
+      }
+      #splash-screen.slide-up {
+        transition: 1s ease-in-out;
+        transform: translateY(-100%);
+      }
+      #splash-content {
+        text-align: center;
+      }
+      #splash-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        transition: transform 0.5s ease;
+        transform: translateY(0);
+      }
+      #splash-extra {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 1s ease, transform 0.5s ease;
+      }
+      #splash-screen.reveal #splash-title {
+        transform: translateY(-20px);
+      }
+      #splash-screen.reveal #splash-extra {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      #loading-bar-container {
+        width: 80%;
+        max-width: 400px;
+        height: 4px;
+        background-color: rgba(61, 68, 77, 0.8);
+        overflow: hidden;
+        border-radius: 2px;
+        margin: 1rem auto;
+      }
+      #loading-bar {
+        height: 100%;
+        background-color: white;
+        width: 0;
+        animation: fillBarStep 2.5s linear forwards;
+        animation-delay: 0.5s;
+      }
+      @keyframes fillBarStep {
+        0% { width: 0; }
+        80% { width: 14%; }
+        82% { width: 14%; }
+        83% { width: 100%; }
+        100% { width: 100%; }
+      }
+      #splash-subtitle {
+        font-size: 1rem;
+        font-weight: 300;
+        letter-spacing: 0.5px;
+        opacity: 0;
+        transition: opacity 1s ease-in-out;
+      }
+      #splash-screen.reveal #splash-subtitle {
+        opacity: 1;
+      }
+      
+      /* Improved Table Styling */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      thead {
+        background-color: rgba(31, 41, 55, 0.9); /* Tailwind gray-800 with opacity */
+      }
+      th, td {
+        padding: 0.75rem 1rem;
+        text-align: left;
+      }
+      th {
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: rgba(209, 213, 219, 0.9); /* Tailwind gray-300 */
+      }
+      tbody tr {
+        background-color: rgba(31, 41, 55, 0.9);
+        transition: background-color 0.2s ease;
+      }
+      tbody tr:nth-child(even) {
+        background-color: rgba(55, 65, 81, 0.9); /* Tailwind gray-700 */
+      }
+      tbody tr:hover {
+        background-color: rgba(75, 85, 99, 0.9); /* Tailwind gray-600 */
+      }
+      td {
+        font-size: 0.875rem;
+        color: rgba(209, 213, 219, 0.9);
+      }
+      
+      /* All Projects Section Adjustments */
+      #projectSearchInput {
+        font-size: 0.875rem;
+      }
+      #sortBySelect {
+        font-size: 0.875rem;
+        background-color: rgba(17, 24, 39, 0.8); /* slightly transparent dark background */
+        border: 1px solid rgba(61, 68, 77, 0.7);
+      }
+      #sortDirectionBtn {
+        font-size: 0.875rem;
+        padding: 0.4rem 0.75rem;
+        background-color: rgba(31, 41, 55, 0.8);
+        border: 1px solid rgba(55, 65, 81, 0.7);
+      }
+    </style>
+  </head>
+  <body class="bg-gray-900 text-white">
+    <div id="splash-screen">
+      <div id="splash-content">
+        <h1 id="splash-title">Payung Engine</h1>
+        <div id="splash-extra">
+          <div id="loading-bar-container">
+            <div id="loading-bar"></div>
+          </div>
+          <p id="splash-subtitle">Please be patient, the girls are preparing</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-container min-h-screen flex flex-col">
+      <!-- Header -->
+      <header class="bg-black bg-opacity-50 backdrop-blur-lg border-b border-[#343740] p-4">
+        <div class="container mx-auto flex justify-between items-center">
+          <h1 class="text-2xl font-bold">Payung Dialog Composer</h1>
+          <div>
+            <button id="createProjectBtn" class="bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-4 py-2 rounded text-sm flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              New Project
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="flex-grow container mx-auto p-6">
+        <div class="mb-8">
+          <h2 class="text-xl font-semibold mb-4">Recent Projects</h2>
+          <div id="projectsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="flex items-center justify-center p-8 border border-dashed border-gray-600 rounded-lg text-gray-400">
+              <p>No recent projects found</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="text-xl font-semibold mb-4">All Projects</h2>
+          <div class="mb-4 flex justify-between flex-wrap gap-3 items-center">
+            <div class="flex-grow max-w-md">
+              <input type="text" id="projectSearchInput" placeholder="Search by name or description..." class="px-4 py-1 w-full">
+            </div>
+            <div class="flex gap-3">
+              <select class="px-4 py-1" id="sortBySelect">
+                <option value="lastModified">Sort by: Last Modified</option>
+                <option value="created">Sort by: Date Created</option>
+                <option value="name">Sort by: Name</option>
+              </select>
+              <button id="sortDirectionBtn" class="hover:bg-gray-700 rounded">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="overflow-x-auto rounded-lg border border-[#3d444d]">
+            <table class="table-auto">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Date Created</th>
+                  <th>Last Modified</th>
+                </tr>
+              </thead>
+              <tbody id="projectsTableBody">
+                <tr>
+                  <td colspan="5" class="text-center text-gray-400">
+                    <p>No projects found</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+
+      <footer class="bg-black bg-opacity-50 backdrop-blur-lg border-t border-[#343740] p-4">
+        <div class="container mx-auto text-center text-gray-400 text-sm">
+          <p>Payung Dialog Composer &copy; 2024. Released under GPL V2.</p>
+          <p>
+            Version: 1.0.0 |
+            <a href="https://github.com/kouhime/payung-event-editor" class="underline text-blue-400" target="_blank" rel="noopener noreferrer">Repository</a> |
+            <a href="https://ko-fi.com/kouhime" class="underline text-blue-400" target="_blank" rel="noopener noreferrer">Support on Ko-Fi</a>
+          </p>
+        </div>
+      </footer>
+    </div>
+
+    <div id="createProjectModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+      <div class="bg-gray-800 border border-[#343740] rounded-lg p-6 w-full max-w-md">
+        <h3 class="text-xl font-semibold mb-4">Create New Project</h3>
+        <form id="createProjectForm">
+          <div class="mb-4">
+            <label for="projectName" class="block text-sm font-medium mb-2">Project Name</label>
+            <input type="text" id="projectName" class="w-full" required>
+          </div>
+          <div class="mb-4">
+            <label for="projectDescription" class="block text-sm font-medium mb-2">Description (Optional)</label>
+            <textarea id="projectDescription" class="w-full h-24"></textarea>
+          </div>
+          <div class="flex justify-end gap-3">
+            <button type="button" id="cancelCreateProject" class="px-4 py-2 border border-gray-600 rounded-md hover:bg-gray-700 transition">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 border border-blue-700 rounded-md hover:bg-blue-700 transition">Create</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const splashScreen = document.getElementById('splash-screen');
+        setTimeout(() => {
+          splashScreen.classList.add('reveal');
+        }, 500);
+        setTimeout(() => {
+          splashScreen.classList.add('slide-up');
+          setTimeout(() => {
+            splashScreen.remove();
+          }, 1000);
+        }, 3000);
+      });
+    </script>
+    <script src="menu.js"></script>
+  </body>
+</html>

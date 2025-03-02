@@ -1,310 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Payung Dialog Composer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
-    <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://cdn.jsdelivr.net/npm/three@0.173.0/build/three.module.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.173.0/examples/jsm/"
-        }
-      }
-    </script>
-    <style>
-      body {
-        overflow: overlay;
-      }
-      body::-webkit-scrollbar {
-        width: 3px;
-        height: 3px;
-        background-color: #030712;
-        opacity: 0;
-      }
-      body::-webkit-scrollbar-thumb {
-        background-color: white;
-        transition: background-color 0.2s ease;
-      }
-      input, textarea, select { 
-        border-radius: 5px;
-        padding: 4px 12px !important;
-        background-color: #030712;
-        border-color: #3d444d !important;
-        color: white; 
-      }
-      select {
-        border-radius: 5px;
-        padding: 4px 12px !important;
-        background-color: #030712;
-        border-color: #3d444d;
-      }
-      .node {
-        width: 200px;
-      }
-      .connector {
-        width: 12px;
-        height: 12px;
-      }
-      .CodeMirror-cursor {
-        border-left: 1px solid white;
-        border-right: 1px solid white;
-      }
-      .cm-editor .cm-cursor {
-        border-left-color: white
-      }
-      .EasyMDEContainer .editor-preview {
-        background-color: #030712 !important;
-        border-color: #3d444d !important;
-        caret-color: white !important;
-        color: #f8f8f2;
-      }
-      .CodeMirror {
-        background-color: #030712 !important;
-        border-color: #3d444d !important;
-        color: #f8f8f2 !important;
-        caret-color: white !important;
-      }
-      .CodeMirror-gutters {
-        background-color: #030712 !important;
-        border-color: #3d444d !important;
-        border-right: 1px solid #444 !important;
-        caret-color: white !important;
-      }
-      .EasyMDEContainer .editor-preview {
-        background-color: #030712 !important;
-        border-color: #3d444d !important;
-        caret-color: white !important;
-        color: #f8f8f2 !important;
-      }
-      #editor {
-        --dot-bg: #030712;
-        --dot-color: #babdc8;
-        --dot-size: 1px;
-        --dot-space: 32px;
-        background:
-          linear-gradient(90deg, var(--dot-bg) calc(var(--dot-space) - var(--dot-size)), transparent 1%) center / var(--dot-space) var(--dot-space),
-          linear-gradient(var(--dot-bg) calc(var(--dot-space) - var(--dot-size)), transparent 1%) center / var(--dot-space) var(--dot-space),
-          var(--dot-color);
-      }
-      #sceneEditor {
-        border-radius: 5px;
-        padding: 4px 12px;
-        background-color: #030712;
-        border-color: #3d444d;
-        overflow: hidden;
-      }
-      .EasyMDEContainer {
-        resize: vertical; 
-        overflow: auto; 
-        min-height: 150px; 
-      }
-      .speaker-input-container {
-        display: flex; 
-        gap: 10px; 
-        align-items: center; 
-      }
-      .speaker-input-container label {
-        margin-right: 5px; 
-      }
-
-    #canvasContainer {
-      position: relative;
-      width: 100%;
-      max-width: 1000px;
-      margin: 0 auto;
-      padding-top: 56.25%;
-      background: #333;
+<head>
+  <meta charset="UTF-8">
+  <title>Payung Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: black;
+      color: white;
+      font-family: sans-serif;
     }
-    #sceneCanvas {
+    .ascii-effect {
       position: absolute;
       top: 0;
       left: 0;
-      background: #111;
+      z-index: 0;
+      pointer-events: auto; 
     }
-    </style>
-  </head>
-  <body class="text-white bg-gray-100">
-    <div id="editor" class="w-[100000px] h-[100000px] relative">
-      <svg id="connections" class="absolute w-[100000px] h-[100000px] inset-0 pointer-events-none"></svg>
-    </div>
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      pointer-events: none; 
+    }
+    .overlay button {
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
+    import { AsciiEffect } from 'https://unpkg.com/three@0.152.2/examples/jsm/effects/AsciiEffect.js';
 
-    <div id="sidebar" class="fixed right-0 top-0 w-[477px] h-screen bg-white backdrop-blur-3xl bg-opacity-5 border-l border-[#343740] shadow-lg p-4 overflow-auto transform transition-all duration-300 hidden">
+    let scene, camera, renderer, effect, plane, initialPositions;
+    const clock = new THREE.Clock();
+    let isHovered = false;
+    let mouse = new THREE.Vector2();
 
+    init();
+    animate();
+
+    function init() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 100);
+      camera.position.z = 5;
       
-      <div class="flex gap-3 justify-between">
-        <h2 id="nodeTitle" class="text-xl truncate font-bold mb-4"></h2>
-        <div class="flex gap-2">
-          <button id="duplicateNode" class="bg-orange-700 bg-opacity-50 hover:bg-opacity-100 transition border-orange-700 border text-white px-4 py-2 rounded">Duplicate Node</button>
-          <button id="deleteNodeButtonSidebar" class="bg-red-700 bg-opacity-50 hover:bg-opacity-100 transition border-red-700 border text-white px-4 py-2 rounded">Delete Node</button>
-        </div>
-      </div>
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(0x000000);
 
+      effect = new AsciiEffect(renderer, ' .:-+*#%@', { invert: true });
+      effect.setSize(window.innerWidth, window.innerHeight);
+      effect.domElement.style.color = 'white';
+      effect.domElement.style.backgroundColor = 'black';
+      effect.domElement.style.filter = 'brightness(0.5)'; 
+      effect.domElement.classList.add('ascii-effect');
+      document.body.appendChild(effect.domElement);
 
-
-      <div class="collapsible-section">
-        <button type="button" class="section-header flex justify-between items-center w-full text-left text-lg font-bold mb-2">
-          Scene Editor
-          <svg class="chevron w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-          </svg>
-        </button>
-        <div class="section-content">
-          <div class="w-full mt-2 flex flex-col gap-4 justify-center items-center">
-            <p>Scene Editor</p>
-            <!-- <div id="sceneEditor" class="w-[calc(16*1.4vw)] h-[calc(9*1.4vw)]"></div> -->
-
-  <div id="canvasContainer">
-    <canvas id="sceneCanvas"></canvas>
-  </div>
-            <div class="mt-2 flex gap-2">
-              <div>
-                <input type="file" id="backgroundUpload" accept="image/*" class="hidden">
-                <button id="uploadBackground" class="bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-2 py-1 rounded">Background</button>
-              </div>
-              <div>
-                <input type="file" id="spriteUpload" accept="image/*" class="hidden">
-                <button id="uploadSprite" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-2 py-1 rounded">Sprite</button>
-              </div>
-              <div>
-                <button id="inheritPrevious" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-2 py-1 rounded">Inherit</button>
-              </div>
-              <div>
-                <button id="Preview" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-2 py-1 rounded">Preview</button>
-              </div>
-            </div>
-            <div id="spriteList" class="mt-2 flex flex-wrap gap-2"></div>
-          </div>
-        </div>
-      </div>
-
-      
-      <div class="collapsible-section  mt-4">
-        <button type="button" class="section-header flex justify-between items-center w-full text-left text-lg font-bold mb-2">
-          Dialogue Details
-          <svg class="chevron w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-          </svg>
-        </button>
-        <div class="section-content">
-          <div id="dialogueContainer" class="mt-4">
-            <div class="speaker-input-container items-center">
-              <input id="speakerInput" type="text" placeholder="Speaker/Actor" class="w-full p-2" style="border-color: #3d444d; border-width: 1px; border-style: solid;">
-              <input type="color" id="speakerColorPicker" value="#ffffff" style="background-color: #3d444d; border: 1px solid #3d444d; border-radius: 5px; height: 30px; width: 40px;">
-            </div>
-            <div class="mt-2"></div>
-            <textarea id="dialogueInput" placeholder="Enter dialogue (Markdown supported)" class="w-full  h-48"></textarea>
-          </div>
-          <div id="nodeItems" class="space-y-2 mt-2"></div>
-          <button id="addItem" class="mt-4 bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-4 py-2 rounded">Add Choice</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="editItemModal" class="fixed left-0 top-0 w-1/3 backdrop-blur-3xl h-screen bg-white bg-opacity-5 border-r border-[#343740] shadow-lg p-4 overflow-auto transform transition-all duration-300 hidden">
-      <h2 class="text-xl font-bold mb-4">Edit Item</h2>
-      <div class="mb-4">
-        <label for="itemTitleInput" class="block text-sm font-medium mb-1">Title</label>
-        <input id="itemTitleInput" type="text" class="border p-1 w-full" placeholder="Enter item title" />
-      </div>
-      <div id="conditionsSection">
-        <h3 class="font-bold">Conditions</h3>
-        <div id="conditionsList" class="space-y-2 mt-2"></div>
-        <button id="addCondition" class="bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-2 py-1 rounded mt-2">Add Condition</button>
-      </div>
-      <div id="flagsSection" class="mt-4">
-        <h3 class="font-bold">Flags</h3>
-        <div id="flagsList" class="space-y-2 mt-2"></div>
-        <button id="addFlag" class="bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-2 py-1 rounded mt-2">Add Flag</button>
-      </div>
-      <button id="confirmItem" class="mt-4 bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-4 py-2 rounded">Confirm</button>
-      <button id="deleteItem" class="mt-4 bg-red-700 bg-opacity-50 hover:bg-opacity-100 transition border-red-700 border text-white px-4 py-2 rounded">Delete</button>
-    </div>
-    <div id="deleteNodeModal" class="fixed hidden left-0 top-0 w-full h-full bg-black bg-opacity-50 backdrop-blur-sm justify-center items-center flex">
-      <div class="bg-[#030712] p-8 rounded-lg shadow-lg border border-[#343740]">
-        <h2 class="text-xl font-bold mb-4">Confirm Delete</h2>
-        <p class="mb-4">Are you sure you want to delete this node?</p>
-        <div class="flex justify-end gap-2">
-          <button id="cancelDeleteNode" class="bg-gray-700 bg-opacity-50 hover:bg-opacity-100 transition border-gray-700 border text-white px-4 py-2 rounded">Cancel</button>
-          <button id="confirmDeleteNode" class="bg-red-700 bg-opacity-50 hover:bg-opacity-100 transition border-red-700 border text-white px-4 py-2 rounded">Delete</button>
-        </div>
-      </div>
-    </div>
-    <div id="spriteDetailModal" class="fixed right-1/4 top-0 w-1/3 h-screen bg-gray-900 text-white border-l border-[#343740] shadow-lg p-4 overflow-auto transform transition-all duration-300 hidden">
-      <h2 class="text-xl font-bold mb-4">Sprite Details</h2>
-      <div class="mb-4">
-        <label for="spriteFocusToggle" class="block text-sm font-medium mb-1">Focus</label>
-        <input id="spriteFocusToggle" type="checkbox" class="mr-2" />
-        <span>Sprite is focused (unfocused darkens sprite)</span>
-      </div>
-      <div class="mb-4">
-        <label for="spriteFocusToggle" class="block text-sm font-medium mb-1">Flip</label>
-        <input id="spriteFlipToggle" type="checkbox" class="mr-2" />
-        <span>Sprite is flipped</span>
-      </div>
-      <div>
-        <label id="updateSprite" for="spriteUpdate"  class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition cursor-pointer border-green-700 border text-white px-2 py-1 rounded">Update Sprite</label>
-        <input type="file" id="spriteUpdate" accept="image/*">
-
-      </div>
-      <div class="mb-4">
-        <label for="spriteAnimClassInput" class="block text-sm font-medium mb-1">Animation Class</label>
-        <input id="spriteAnimClassInput" type="text" class="w-full p-2 bg-gray-800 border border-gray-600 rounded" placeholder="Enter animation class" />
-      </div>
-      <div class="mb-4">
-        <label for="spriteZIndexInput" class="block text-sm font-medium mb-1">Z-Index</label>
-        <input id="spriteZIndexInput" type="number" class="w-full p-2 bg-gray-800 border border-gray-600 rounded" placeholder="Enter z index" />
-      </div>
-      <div class="mb-4">
-        <label for="spriteContinuityIdentifierInput" class="block text-sm font-medium mb-1">Continuity Identifier</label>
-        <input id="spriteContinuityIdentifierInput" type="text" class="w-full p-2 bg-gray-800 border border-gray-600 rounded" placeholder="Enter continuity identifier" />
-      </div>
-      <div class="mt-4 flex gap-2">
-        <button id="saveSpriteDetailsBtn" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-2 py-1 rounded">Save</button>
-        <button id="closeSpriteDetailModal" class="bg-red-700 bg-opacity-50 hover:bg-opacity-100 transition border-red-700 border text-white px-2 py-1 rounded">Close</button>
-      </div>
-    </div>
-    <div id="parseScriptModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-      <div class="bg-[#030712] p-6 rounded-lg border border-[#343740] w-1/3">
-        <h2 class="text-xl font-bold mb-4">Parse Dialogue Script</h2>
-        <textarea id="scriptInput" placeholder="format 'actor: dialog' jika newline itu langsung nyambung. jika break line (ada empty newline diantara block dialog) itu terpisah" class="w-full h-48 p-2 bg-gray-800 text-white border border-gray-600 rounded mb-4" placeholder="Enter dialogue script here..."></textarea>
-        <div class="flex justify-end gap-2">
-          <button id="parseScriptClose" class="bg-red-700 hover:bg-red-800 transition border text-white px-4 py-2 rounded">Cancel</button>
-          <button id="parseScriptSubmit" class="bg-green-700 hover:bg-green-800 transition border text-white px-4 py-2 rounded">Parse</button>
-        </div>
-      </div>
-    </div>
-    <div id="rightButtonContainer" class="fixed bottom-4 left-4 flex space-x-2">
-      <div class="flex space-x-2">
-        <button id="addNode" class="bg-lime-700 bg-opacity-50 hover:bg-opacity-100 transition border-lime-700 border text-white px-4 py-2 rounded">Add Dialogue</button>
-        <button id="parseScript" class="bg-lime-700 bg-opacity-50 hover:bg-opacity-100 transition border-lime-700 border text-white px-4 py-2 rounded">
-          Parse Script
-        </button>
-    </div>
-    <div id="rightButtonContainer" class="fixed bottom-4 right-4 flex space-x-2">
-      <div class="flex space-x-2">
-        <button id="saveDB" class="bg-purple-700 bg-opacity-50 border border-purple-700 hover:bg-opacity-100 transition text-white px-4 py-2 rounded">Save Database</button>
-      </div>
-      <button id="loadDB" class="bg-purple-700 bg-opacity-50 border border-purple-700 hover:bg-opacity-100 transition text-white px-4 py-2 rounded">Load Database</button>
-    </div>
-    <input type="file" id="dbFileInput" class="hidden" />
-    <script type="module" src="js/app.js"></script>
-    <script type="module" src="js/sprite.js"></script>
-
-    <script>
-      document.querySelectorAll('.section-header').forEach(header => {
-        header.addEventListener('click', () => {
-          const content = header.nextElementSibling;
-          content.classList.toggle('hidden');
-          const chevron = header.querySelector('.chevron');
-          chevron.classList.toggle('rotate-180');
-        });
+      effect.domElement.addEventListener('mouseenter', () => { isHovered = true; });
+      effect.domElement.addEventListener('mouseleave', () => { isHovered = false; });
+      effect.domElement.addEventListener('mousemove', (e) => {
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
       });
-    </script>
-  </body>
+
+      const geometry = new THREE.PlaneGeometry(10, 10, 200, 200);
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
+      plane = new THREE.Mesh(geometry, material);
+      scene.add(plane);
+
+      const posAttr = plane.geometry.attributes.position;
+      initialPositions = new Float32Array(posAttr.array.length);
+      for (let i = 0; i < posAttr.array.length; i++) {
+        initialPositions[i] = posAttr.array[i];
+      }
+
+      window.addEventListener('resize', onWindowResize, false);
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      effect.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const time = clock.getElapsedTime();
+      const posAttr = plane.geometry.attributes.position;
+
+      let rippleOrigin = null;
+      if (isHovered) {
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObject(plane);
+        if (intersects.length > 0) {
+          rippleOrigin = intersects[0].point;
+        }
+      }
+
+      for (let i = 0; i < posAttr.array.length; i += 3) {
+        const x = initialPositions[i];
+        const y = initialPositions[i + 1];
+        let z = Math.sin(Math.sqrt(x*x + y*y)*2 - time * 3) * 0.5;
+
+        if (rippleOrigin) {
+          const dx = x - rippleOrigin.x;
+          const dy = y - rippleOrigin.y;
+          const d = Math.sqrt(dx*dx + dy*dy);
+          z += Math.sin(d * 10 - time * 5) * Math.exp(-d * d * 2) * 0.3;
+        }
+
+        posAttr.array[i + 2] = z;
+      }
+      posAttr.needsUpdate = true;
+
+      effect.render(scene, camera);
+    }
+  </script>
+
+  <div class="overlay">
+    <div>
+      <h1 class="text-4xl font-bold mb-4">Payung Toolkit</h1>
+      <p class="text-lg mb-8">Thank you for being here, please enjoy</p>
+      <div class="flex justify-center space-x-8 mb-8">
+        <div class="flex flex-col items-center">
+          <button class="bg-white text-black py-2 px-4 rounded">Payung Version</button>
+          <p class="text-sm mt-2">
+            Beta Releases<br>
+            <span class="text-xs">0.5b 2025-03-02</span>
+          </p>
+        </div>
+        <div class="flex flex-col items-center">
+          <button class="bg-white text-black py-2 px-4 rounded">Kaede Version</button>
+          <p class="text-sm mt-2">Experimental Releses</p>
+          <span class="text-xs">As of now</span>
+        </div>
+      </div>
+      <p class="max-w-xl text-sm">
+        A very simple developer friendly tool for event creation and mapmaping (mapmmaking is in the works, not released yet)
+      </p>
+      <br>
+      <p class="text-sm">Made with love by the Payung Team <3</p>
+    </div>
+  </div>
+</body>
 </html>

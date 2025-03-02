@@ -1,105 +1,22 @@
-
-export const $ = id => document.getElementById(id);
-
-export const uiConfig = {
-  selectors: {
-      editor: "editor",
-      connectionsSVG: "connections",
-      sidebar: "sidebar",
-      addItemButton: "addItem",
-      addNodeButton: "addNode",
-      editItemModal: "editItemModal",
-      addConditionButton: "addCondition",
-      conditionsList: "conditionsList",
-      addFlagButton: "addFlag",
-      flagsList: "flagsList",
-      duplicateNodeButton: "duplicateNode",
-      confirmItemButton: "confirmItem",
-      deleteItemButton: "deleteItem",
-      saveDBButton: "saveDB",
-      loadDBButton: "loadDB",
-      dbFileInput: "dbFileInput",
-      itemTitleInput: "itemTitleInput",
-      nodeElementSelector: "div.node",
-      nodeTitleSelectorInNode: "div.font-semibold",
-      conditionRowInputsSelector: "input, select",
-      flagRowInputsSelector: "input",
-      dialogueInput: "dialogueInput",
-      speakerInput: "speakerInput",
-      deleteNodeButtonSidebar: 'deleteNodeButtonSidebar', 
-      deleteNodeModal: 'deleteNodeModal', 
-      confirmDeleteNodeButton: 'confirmDeleteNode', 
-      cancelDeleteNodeButton: 'cancelDeleteNode', 
-  },
-  classes: {
-      hidden: "hidden",
-      nodeSelectedBorder: "border-2",
-      nodeSelectedBorderColor: "border-blue-500",
-      conditionFlagRow: "flex space-x-2 items-center",
-      inputField: "border p-1"
-  },
-  text: {
-      selectedConnectionPrefix: "Selected: ",
-      selectConnectionTargetPrompt: "Click on a node to select as connection target...",
-      variablePlaceholder: "Variable",
-      operatorOptions: ["=", ">", "<", "!="],
-      valuePlaceholder: "Value",
-      flagNamePlaceholder: "Flag Name",
-      trueFalseLabel: "True/False",
-      defaultItemTitlePrefix: "Choice "
-  },
-  events: {
-      nodeSelected: "nodeSelected",
-      nodeToConnect: "nodeToConnect",
-      updateConnection: "updateConnection",
-      editItem: "editItem"
-  },
-  styles: {
-      panningCursor: "grabbing",
-      defaultCursor: "default"
-  },
-  defaultNodeTitle: "Untitled" 
-};
-
-window.nodes = []
-window.selectedNode = null
-
-export let connections = [];
-let currentEditItem = null,
-  connectionSelectionMode = false,
-  selectedConnectionTarget = null;
-export let dbInstance = null;
-
-export const editor = $(uiConfig.selectors.editor),
-  svg = $(uiConfig.selectors.connectionsSVG),
-  sidebar = $(uiConfig.selectors.sidebar),
-  addItemButton = $(uiConfig.selectors.addItemButton),
-  addNodeButton = $(uiConfig.selectors.addNodeButton),
-  editItemModal = $(uiConfig.selectors.editItemModal),
-  addConditionBtn = $(uiConfig.selectors.addConditionButton),
-  conditionsList = $(uiConfig.selectors.conditionsList),
-  addFlagBtn = $(uiConfig.selectors.addFlagButton),
-  flagsList = $(uiConfig.selectors.flagsList),
-  duplicateNodeButton = $(uiConfig.selectors.duplicateNodeButton),
-  confirmItemBtn = $(uiConfig.selectors.confirmItemButton),
-  deleteItemBtn = $(uiConfig.selectors.deleteItemButton),
-  saveDBButton = $(uiConfig.selectors.saveDBButton),
-  loadDBButton = $(uiConfig.selectors.loadDBButton),
-  dbFileInput = $(uiConfig.selectors.dbFileInput),
-  itemTitleInput = $(uiConfig.selectors.itemTitleInput),
-  spriteDetailModal = $('spriteDetailModal');
-
-import {
-  initDatabase,
-  saveStateToDB,
-  downloadDatabase,
-  loadDatabaseFile
-} from "./database.js";
+import { $, buildConditionRow, buildFlagRow, buildClearAllButton } from './ui.js';
+import { uiConfig } from './config.js';
+import { 
+  initDatabase, 
+  saveStateToDB, 
+  saveProjectToFile,
+  loadProjectFromPath,
+  loadStateFromDBToUI 
+} from './database.js';
+import { 
+  setupDatabaseEvents, 
+  setupAddNodeButton, 
+  setupGlobalEvents 
+} from './eventHandlers.js';
 import {
   createNode,
   makeDraggable,
   selectNode,
-  duplicateNode as duplicateNodeFn
+  duplicateNode,
 } from "./nodes.js";
 import {
   createRow,
@@ -112,13 +29,101 @@ import {
   commitSceneChangesToNodeData,
   resizeCanvas
 } from "./sprite.js";
-import { closeSidebar, iniializeSidebar } from "./sidebar.js";
-  
+import { 
+  closeSidebar, 
+  iniializeSidebar 
+} from "./sidebar.js";
+import {
+  setupEditorEvents,
+  setupPanning,
+  setupAreaSelection,
+  clearNodeSelection,
+  updateSelectionUI,
+  resetEditorTransform
+} from "./editorService.js";
+import { initVariableEditor, loadVariables, populateVariableEditor } from './variables.js';
+import { initializeScriptEditor, getScriptContent, clearScriptContent } from './scriptParser.js';
+import { populateNodeVariableChanges } from './nodeVariables.js';
+
+window.nodes = [];
+window.selectedNode = null;
+window.connections = [];
+window.dbInstance = null;
+window.connectionSelectionMode = false;
+window.selectedConnectionTarget = null;
+let currentEditItem = null;
+
+async function initializeApp() {
+    window.db = await initDatabase();
+    window.dbInstance = window.db;
+    window.connections = [];
+    window.globalVariables = [];
+    window.currentProjectPath = null;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectPath = urlParams.get('project');
+    
+    if (projectPath) {
+        try {
+            console.log('Loading project from path:', projectPath);
+            const success = await loadProjectFromPath(projectPath, (newDb) => {
+                window.db = newDb;
+                window.dbInstance = newDb;
+            });
+            
+            if (success) {
+                await loadStateFromDBToUI(window.db, editor, window.connections, spriteList);
+                window.globalVariables = await loadVariables(window.db);
+            } else {
+                console.error('Failed to load project from path:', projectPath);
+                alert('Failed to load project. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error loading project:', error);
+            alert('Error loading project: ' + error.message);
+        }
+    }
+
+    initVariableEditor();
+
+    setupPanning();
+    setupEditorEvents();
+    setupAreaSelection();
+    setupDatabaseEvents();
+    setupAddNodeButton();
+    setupGlobalEvents();
+    
+    updateSelectionUI();
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            clearNodeSelection();
+            window.closeSidebar();
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initializeApp);
+
+export const svg = $(uiConfig.selectors.connectionsSVG),
+  sidebar = $(uiConfig.selectors.sidebar),
+  addItemButton = $(uiConfig.selectors.addItemButton),
+  addNodeButton = $(uiConfig.selectors.addNodeButton),
+  editItemModal = $(uiConfig.selectors.editItemModal),
+  addConditionBtn = $(uiConfig.selectors.addConditionButton),
+  conditionsList = $(uiConfig.selectors.conditionsList),
+  addFlagBtn = $(uiConfig.selectors.addFlagButton),
+  flagsList = $(uiConfig.selectors.flagsList),
+  duplicateNodeButton = $(uiConfig.selectors.duplicateNodeButton),
+  confirmItemBtn = $(uiConfig.selectors.confirmItemButton),
+  deleteItemBtn = $(uiConfig.selectors.deleteItemButton),
+  saveDBButton = $(uiConfig.selectors.saveDBButton),
+  returnToMenuButton = document.getElementById('returnToMenu'),
+  itemTitleInput = $(uiConfig.selectors.itemTitleInput),
+  spriteDetailModal = $('spriteDetailModal');
 
 let isPanning = false;
 let panStartX, panStartY, initialScrollX, initialScrollY;
-
-initDatabase().then(db => dbInstance = db);
 
 editor.addEventListener("mousedown", e => {
   if (e.target !== editor || e.button != 1) return;
@@ -145,22 +150,26 @@ document.addEventListener("mouseup", (e) => {
   }
 });
 
-
-
-saveDBButton.addEventListener("click", () => {
-  saveStateToDB(dbInstance, connections);
-  downloadDatabase(dbInstance);
+saveDBButton.addEventListener("click", async () => {
+    try {
+        await saveStateToDB(window.db, window.connections);
+        
+        if (window.electron && window.currentProjectPath) {
+            const success = await saveProjectToFile(window.db);
+            if (success) {
+                alert('Project saved successfully!');
+            } else {
+                alert('Failed to save project. Please try again.');
+            }
+        } else {
+            alert('No project path found. Please create a new project from the main menu.');
+        }
+    } catch (error) {
+        console.error('Error saving project:', error);
+        alert('Failed to save project. Please try again.');
+    }
 });
 
-loadDBButton.addEventListener("click", () => dbFileInput.click());
-
-dbFileInput.addEventListener("change", e => {
-  if (e.target.files.length)
-      loadDatabaseFile(e.target.files[0], newDb => {
-          dbInstance = newDb;
-          loadStateFromDBToUI();
-      });
-});
 
 addNodeButton.addEventListener("click", () => {
   const screenCenterX = window.innerWidth / 2 + window.pageXOffset;
@@ -191,10 +200,10 @@ window.addEventListener("load", () => {
 });
 
 editor.addEventListener(uiConfig.events.nodeSelected, e => {
-  if (connectionSelectionMode || !sidebar.classList.contains(uiConfig.classes.hidden)) {
+  if (window.connectionSelectionMode || !sidebar.classList.contains(uiConfig.classes.hidden)) {
     closeSidebar()
   }
-  selectNode(e.detail.node);
+  selectNode(e.detail.node, false);
 });
 
 window.addEventListener("keyup", e => {
@@ -203,7 +212,7 @@ window.addEventListener("keyup", e => {
   }
 });
 
-editor.addEventListener(uiConfig.events.updateConnection, () => updateConnections(connections));
+editor.addEventListener(uiConfig.events.updateConnection, () => updateConnections(window.connections));
 
 editor.addEventListener("click", e => {
   if (e.target === editor) {
@@ -211,65 +220,51 @@ editor.addEventListener("click", e => {
   }
 });
 
-const buildConditionRow = (cond = {}) => {
-  const row = document.createElement("div");
-  row.className = uiConfig.classes.conditionFlagRow;
-  const variable = Object.assign(document.createElement("input"), {
-      type: "text",
-      placeholder: uiConfig.text.variablePlaceholder,
-      className: uiConfig.classes.inputField,
-      value: cond.variable || ""
-  });
-  const operator = document.createElement("select");
-  operator.className = uiConfig.classes.inputField;
-  uiConfig.text.operatorOptions.forEach(op => {
-      const option = document.createElement("option");
-      option.value = op;
-      option.textContent = op;
-      if (op === cond.operator) option.selected = true;
-      operator.appendChild(option);
-  });
-  const value = Object.assign(document.createElement("input"), {
-      type: "text",
-      placeholder: uiConfig.text.valuePlaceholder,
-      className: uiConfig.classes.inputField,
-      value: cond.value || ""
-  });
-  row.append(variable, operator, value);
-  return row;
-};
-
-const buildFlagRow = (flag = {}) => {
-  const row = document.createElement("div");
-  row.className = uiConfig.classes.conditionFlagRow;
-  const flagName = Object.assign(document.createElement("input"), {
-      type: "text",
-      placeholder: uiConfig.text.flagNamePlaceholder,
-      className: uiConfig.classes.inputField,
-      value: flag.flagName || ""
-  });
-  const label = document.createElement("label");
-  label.className = "flex items-center space-x-1"; 
-  const checkbox = Object.assign(document.createElement("input"), {
-      type: "checkbox",
-      checked: flag.value || false
-  });
-  label.append(checkbox, document.createTextNode(uiConfig.text.trueFalseLabel));
-  row.append(flagName, label);
-  return row;
-};
-
 addItemButton.addEventListener("click", () => {
   if (!window.selectedNode) return;
-  editor.style.transform = "";
+  resetEditorTransform();
   conditionsList.innerHTML = "";
   flagsList.innerHTML = "";
-  selectedConnectionTarget = null;
+  
+  const defaultChoiceContainer = document.createElement('div');
+  defaultChoiceContainer.className = 'flex items-center space-x-2 hidden mt-4 mb-2';
+  
+  const defaultChoiceLabel = document.createElement('label');
+  defaultChoiceLabel.textContent = 'Default choice (when no conditions are met):';
+  defaultChoiceLabel.className = 'text-white';
+  
+  const defaultChoiceCheckbox = document.createElement('input');
+  defaultChoiceCheckbox.type = 'checkbox';
+  defaultChoiceCheckbox.id = 'defaultChoiceCheckbox';
+  defaultChoiceCheckbox.checked = false;
+  
+  defaultChoiceContainer.appendChild(defaultChoiceLabel);
+  defaultChoiceContainer.appendChild(defaultChoiceCheckbox);
+  
+  const conditionsContainer = conditionsList.parentElement;
+  conditionsContainer.parentElement.insertBefore(defaultChoiceContainer, conditionsContainer);
+  
+  window.selectedConnectionTarget = null;
   itemTitleInput.value = "";
   editItemModal.classList.remove(uiConfig.classes.hidden);
+  editItemModal.classList.add('flex');
   currentEditItem = {
       nodeId: window.selectedNode.dataset.id
   };
+});
+
+editItemModal.addEventListener('click', (e) => {
+  if (e.target === editItemModal) {
+    editItemModal.classList.add(uiConfig.classes.hidden);
+    editItemModal.classList.remove('flex');
+  }
+});
+
+spriteDetailModal.addEventListener('click', (e) => {
+  if (e.target === spriteDetailModal) {
+    spriteDetailModal.classList.add(uiConfig.classes.hidden);
+    spriteDetailModal.classList.remove('flex');
+  }
 });
 
 addConditionBtn.addEventListener("click", () => conditionsList.appendChild(buildConditionRow()));
@@ -282,15 +277,34 @@ document.addEventListener(uiConfig.events.editItem, e => {
       row
   } = e.detail;
   console.log(row.dataset)
-  let old = connections.filter(e => e.from.itemId == row.dataset.itemId)
+  let old = window.connections.filter(e => e.from.itemId == row.dataset.itemId)
   if (old.length > 0) {
       old = old[0]
       $("connections").removeChild(old.line)
-      connections.splice(connections.indexOf(old), 1)
+      window.connections.splice(window.connections.indexOf(old), 1)
   }
   conditionsList.innerHTML = "";
   flagsList.innerHTML = "";
   itemTitleInput.value = row.itemDetails?.title || "";
+  
+  const defaultChoiceContainer = document.createElement('div');
+  defaultChoiceContainer.className = 'flex items-center space-x-2 hidden mt-4 mb-2';
+  
+  const defaultChoiceLabel = document.createElement('label');
+  defaultChoiceLabel.textContent = 'Default choice (when no conditions are met):';
+  defaultChoiceLabel.className = 'text-white';
+  
+  const defaultChoiceCheckbox = document.createElement('input');
+  defaultChoiceCheckbox.type = 'checkbox';
+  defaultChoiceCheckbox.id = 'defaultChoiceCheckbox';
+  defaultChoiceCheckbox.checked = row.itemDetails?.isDefault || false;
+  
+  defaultChoiceContainer.appendChild(defaultChoiceLabel);
+  defaultChoiceContainer.appendChild(defaultChoiceCheckbox);
+  
+  const conditionsContainer = conditionsList.parentElement;
+  conditionsContainer.parentElement.insertBefore(defaultChoiceContainer, conditionsContainer);
+  
   (row.itemDetails?.conditions || []).forEach(cond => conditionsList.appendChild(buildConditionRow(cond)));
   (row.itemDetails?.flags || []).forEach(flag => flagsList.appendChild(buildFlagRow(flag)));
   currentEditItem = {
@@ -300,11 +314,10 @@ document.addEventListener(uiConfig.events.editItem, e => {
   editItemModal.classList.remove(uiConfig.classes.hidden);
   let svg = document.getElementById("connections") 
   const nodeData = window.nodes.find(n => n.id === currentEditItem.nodeId);
-  removeRow(nodeData, connections, row, svg)
+  removeRow(nodeData, window.connections, row, svg)
 });
 
 confirmItemBtn.addEventListener("click", () => {
-  commitSceneChangesToNodeData()
   if (!currentEditItem) return;
   const nodeData = window.nodes.find(n => n.id === currentEditItem.nodeId);
   if (!nodeData) return;
@@ -324,17 +337,22 @@ confirmItemBtn.addEventListener("click", () => {
       };
   });
   const title = itemTitleInput.value;
+  
+  const defaultChoiceCheckbox = document.getElementById('defaultChoiceCheckbox');
+  const isDefault = defaultChoiceCheckbox ? defaultChoiceCheckbox.checked : false;
+  
   const details = {
       title,
       conditions,
       flags,
-      connectionTarget: selectedConnectionTarget
+      isDefault,
+      connectionTarget: window.selectedConnectionTarget
   };
   console.log(currentEditItem)
-  createRow(nodeData, details, svg, connections, currentEditItem.itemDetails ? currentEditItem.itemDetails.itemId : null);
+  createRow(nodeData, details, svg, window.connections, currentEditItem.itemDetails ? currentEditItem.itemDetails.itemId : null);
   editItemModal.classList.add(uiConfig.classes.hidden);
   currentEditItem = null;
-  selectNode(nodeData.element, sidebar, editor);
+  selectNode(nodeData.element, false);
 });
 
 deleteItemBtn.addEventListener("click", () => {
@@ -344,97 +362,11 @@ deleteItemBtn.addEventListener("click", () => {
   commitSceneChangesToNodeData();
   editItemModal.classList.add(uiConfig.classes.hidden);
   currentEditItem = null;
-  selectNode(nodeData.element, sidebar, editor);
+  selectNode(nodeData.element, false);
 });
 
-async function loadStateFromDBToUI() {
-  console.log(connections)
-  connections = []
-  const connection = $('connections');
-  while (connection.firstChild) {
-    connection.removeChild(connection.lastChild);
-  }
-  window.nodes = [];
-  editor.querySelectorAll(uiConfig.selectors.nodeElementSelector).forEach(n => n.remove());
-  spriteList.innerHTML = '';
-  const nodeRows = dbInstance.exec("SELECT * FROM nodes")[0]?.values || [];
-  nodeRows.forEach(([id, x, y, title]) => {
-      const nodeData = createNode(x, y, editor, makeDraggable, {
-          id,
-          title: title || uiConfig.defaultNodeTitle
-      });
-      const sceneData = dbInstance.exec(`SELECT background_file_id, dialogue, speaker, speaker_color FROM scenes WHERE node_id = ?`, [id])[0]?.values?.[0];
-      if (sceneData) {
-          const [background_file_id, dialogue, speaker, speaker_color] = sceneData;
-          let background_image = null;
-          if (background_file_id) {
-              const fileData = dbInstance.exec(`SELECT base64_data FROM files WHERE id = ?`, [background_file_id])[0]?.values?.[0]?.[0];
-              background_image = fileData || null;
-          }
-          nodeData.scene.background = background_image;
-          nodeData.dialogue = dialogue || "";
-          nodeData.speaker = speaker || "";
-          nodeData.speakerColor = speaker_color || null
-      }
-      const spriteRows = dbInstance.exec(`SELECT id, file_id, x, y, width, height, focus, animation_class, continuity_id, flip, zIndex FROM sprites WHERE scene_node_id = ?`, [id])[0]?.values || [];
-      spriteRows.forEach(([spriteId, file_id, spriteX, spriteY, width, height, focus, animation_class, continuity_id, flip, zIndex]) => {
-          let src = null;
-          if (file_id) {
-              const fileData = dbInstance.exec(`SELECT base64_data FROM files WHERE id = ?`, [file_id])[0]?.values?.[0]?.[0];
-              src = fileData || null;
-          }
-          const spriteDataObject = {
-              src,
-              x: spriteX,
-              y: spriteY,
-              width,
-              height,
-              focus: focus === 1,
-              animationClass: animation_class || '',
-              continuityIdentifier: continuity_id || '',
-              flip: flip,
-              zIndex: zIndex
-          };
-          nodeData.scene.sprites.push(spriteDataObject);
-      });
-  });
-  const itemRows = dbInstance.exec("SELECT id, node_id, title, connection_target_node_id FROM items")[0]?.values || [];
-  itemRows.forEach(([itemId, nodeId, title, connection_target_node_id]) => {
-      const nodeData = window.nodes.find(n => n.id === nodeId);
-      if (nodeData) {
-          const itemDetails = {
-              title: title || `${uiConfig.text.defaultItemTitlePrefix}${itemId}`,
-              connectionTarget: connection_target_node_id || null,
-              conditions: [],
-              flags: []
-          };
-          const conditionRows = dbInstance.exec(`SELECT variable, operator, value FROM conditions WHERE item_id = ?`, [itemId])[0]?.values || [];
-          conditionRows.forEach(([variable, operator, value]) => {
-              itemDetails.conditions.push({
-                  variable,
-                  operator,
-                  value
-              });
-          });
-          const flagRows = dbInstance.exec(`SELECT flag_name, value FROM flags WHERE item_id = ?`, [itemId])[0]?.values || [];
-          flagRows.forEach(([flag_name, value]) => {
-              itemDetails.flags.push({
-                  flagName: flag_name,
-                  value: value === 1
-              });
-          });
-          console.log(connections)
-          createRow(nodeData, itemDetails, svg, connections, itemId);
-          const lastRow = nodeData.rows[nodeData.rows.length - 1];
-          lastRow.row.dataset.itemId = itemId;
-      }
-  });
-  updateConnections(connections);
-  console.log("State loaded from database with optimized schema (base64 data loaded from files table).");
-}
-
-function animate() {
-  updateConnections(connections);
+async function animate() {
+  updateConnections(window.connections);
   requestAnimationFrame(animate);
   resizeCanvas()
 }
@@ -445,16 +377,18 @@ iniializeSidebar();
 
   $('parseScript').addEventListener('click', () => {
     $('parseScriptModal').classList.remove('hidden');
+    initializeScriptEditor();
   });
 
   $('parseScriptClose').addEventListener('click', () => {
     $('parseScriptModal').classList.add('hidden');
+    clearScriptContent();
   });
 
   $('parseScriptSubmit').addEventListener('click', () => {
-    const scriptText = $('scriptInput').value.trim();
+    const scriptText = getScriptContent().trim();
     if (!scriptText) { 
-      alert("Its empty"); 
+      alert("Script is empty"); 
       return; 
     }
     
@@ -463,10 +397,18 @@ iniializeSidebar();
       const lines = group.split('\n').filter(line => line.trim() !== '');
       const groupNodes = [];
       lines.forEach((line, index) => {
-        const parts = line.split(':');
-        if (parts.length < 2) return; 
-        const speaker = parts[0].trim();
-        const dialogue = parts.slice(1).join(':').trim();
+        const trimmedLine = line.trim();
+        let speaker, dialogue;
+
+        if (trimmedLine.startsWith('-')) {
+          speaker = "Description";
+          dialogue = trimmedLine.slice(1).trim();
+        } else {
+          const parts = line.split(':');
+          if (parts.length < 2) return;
+          speaker = parts[0].trim();
+          dialogue = parts.slice(1).join(':').trim();
+        }
         
         let x = 100 + index * 250;
         let y = 100 + groupIndex * 150;        
@@ -478,9 +420,14 @@ iniializeSidebar();
         const editorAbsY = editorRect.top + window.pageYOffset;
         x += screenCenterX - editorAbsX;
         y += screenCenterY - editorAbsY;
-        const newNode = createNode(x, y, document.getElementById('editor'), makeDraggable, { title: speaker });
+        const newNode = createNode(x, y, document.getElementById('editor'), makeDraggable, { 
+          title: speaker === "Description" ? "Description" : speaker 
+        });
         newNode.dialogue = dialogue;
         newNode.speaker = speaker;
+        if (speaker === "Description") {
+          newNode.speakerColor = "#888888";
+        }
         groupNodes.push(newNode);
       });
       
@@ -494,9 +441,20 @@ iniializeSidebar();
           flags: []
         };
         
-        createRow(currentNode, itemDetails, document.getElementById('connections'), connections);
+        createRow(currentNode, itemDetails, document.getElementById('connections'), window.connections);
       }
     });
     
     $('parseScriptModal').classList.add('hidden');
+    clearScriptContent();
   });
+
+const rightButtonContainer = $('rightButtonContainer');
+const variableEditorBtn = document.createElement('button');
+variableEditorBtn.className = 'bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-4 py-2 rounded';
+variableEditorBtn.textContent = 'Variables';
+variableEditorBtn.addEventListener('click', () => {
+    populateVariableEditor();
+    $('variableEditorModal').classList.remove('hidden');
+});
+rightButtonContainer.querySelector('.flex').appendChild(variableEditorBtn);

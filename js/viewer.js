@@ -1,7 +1,9 @@
 import * as THREE from 'three';
+import { $ } from './ui.js';
+import { applyNodeVariableChanges } from './nodeVariables.js';
 
-const canvas = document.getElementById('sceneCanvas');
-const canvasContainer = document.getElementById('canvasContainer');
+const canvas = $('sceneCanvas');
+const canvasContainer = $('canvasContainer');
 const baseWidth = 1280;
 const baseHeight = 720;
 const continuitySprites = {};
@@ -26,7 +28,7 @@ let currentSprite = null;
 
 let lastDialogue = null;
 let selectionOutline = null;
-const choiceBox = document.getElementById('choiceBox')
+const choiceBox = $('choiceBox');
 
 export function resizeCanvas() {
     const containerWidth = canvasContainer.clientWidth;
@@ -71,8 +73,8 @@ window.addEventListener("mouseup", () => {
 })
 
 function typeDialogue(dialogueText, actor = '', color = 'white', dialogueBoxId = 'dialogueBox', typingSpeed = 10) {
-    const dialogueBox = document.getElementById(dialogueBoxId);
-    const nameBox = document.getElementById("nameBox");
+    const dialogueBox = $(dialogueBoxId);
+    const nameBox = $('nameBox');
     if (!dialogueBox) {
         console.error(`Dialogue box element with id '${dialogueBoxId}' not found.`);
         return;
@@ -124,34 +126,64 @@ export function loadSceneForNode(nodeData) {
     lastDialogue = currentDialogue;
     currentDialogue = nodeData;
     window.multiChoice = true
+    
+    if (window.globalVariables && nodeData.variableChanges && Array.isArray(nodeData.variableChanges)) {
+        applyNodeVariableChanges(nodeData);
+    }
 
     if (nodeData.rows.length > 0) {
         if (nodeData.rows.length == 1 && nodeData.rows[0].row.itemDetails.title == "PRE_CONT") {
             window.multiChoice = false
             nextScene = window.nodes.filter(e => e.id == nodeData.rows[0].row.itemDetails.connectionTarget)[0]
         } else {
-
             if (choiceBox) {
-                nodeData.rows.forEach(choice => {
-                    const choiceEl = document.createElement('div');
-                    choiceEl.id = choice.row.itemDetails.connectionTarget;
-                    choiceEl.style.background = "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 20%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0) 100%)";
-                    choiceEl.className = "text-center bg-opacity-50 px-4 py-2 w-[80%] cursor-pointer hover:bg-opacity-70 transition-bg duration-300";
-                    choiceEl.textContent = choice.row.itemDetails.title;
+                choiceBox.innerHTML = '';
+                
+                const validChoices = nodeData.rows.filter(choice => checkChoiceConditions(choice));
+                
+                if (validChoices.length === 0) {
+                    const defaultChoice = nodeData.rows.find(choice => 
+                        choice.row.itemDetails.isDefault === true);
+                    
+                    if (defaultChoice) {
+                        window.multiChoice = false;
+                        nextScene = window.nodes.find(node => 
+                            node.id === defaultChoice.row.itemDetails.connectionTarget);
+                        
+                        setTimeout(() => {
+                            if (nextScene) {
+                                loadSceneForNode(nextScene);
+                            }
+                        }, 500);
+                    } else {
+                        const noChoiceEl = document.createElement('div');
+                        noChoiceEl.style.background = "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 20%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0) 100%)";
+                        noChoiceEl.className = "text-center bg-opacity-50 px-4 py-2 w-[80%] text-gray-400";
+                        noChoiceEl.textContent = "No available choices";
+                        choiceBox.appendChild(noChoiceEl);
+                    }
+                } else {
+                    validChoices.forEach(choice => {
+                        const choiceEl = document.createElement('div');
+                        choiceEl.id = choice.row.itemDetails.connectionTarget;
+                        choiceEl.style.background = "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 20%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0) 100%)";
+                        choiceEl.className = "text-center bg-opacity-50 px-4 py-2 w-[80%] cursor-pointer hover:bg-opacity-70 transition-bg duration-300";
+                        choiceEl.textContent = choice.row.itemDetails.title;
 
-                    choiceEl.addEventListener('click', () => {
-                        const targetNodeId = choice.row.itemDetails.connectionTarget;
-                        nextScene = window.nodes.find(node => node.id === targetNodeId);
-                        if (nextScene) {
-                            window.multiChoice = false;
-                            choiceBox.innerHTML = '';
-                            loadSceneForNode(nextScene);
-                        } else {
-                            console.error(`Node with id '${targetNodeId}' not found.`);
-                        }
+                        choiceEl.addEventListener('click', () => {
+                            const targetNodeId = choice.row.itemDetails.connectionTarget;
+                            nextScene = window.nodes.find(node => node.id === targetNodeId);
+                            if (nextScene) {
+                                window.multiChoice = false;
+                                choiceBox.innerHTML = '';
+                                loadSceneForNode(nextScene);
+                            } else {
+                                console.error(`Node with id '${targetNodeId}' not found.`);
+                            }
+                        });
+                        choiceBox.appendChild(choiceEl);
                     });
-                    choiceBox.appendChild(choiceEl);
-                });
+                }
             } else {
                 console.error('Choice box element with id "choiceBox" not found.');
             }
@@ -159,9 +191,9 @@ export function loadSceneForNode(nodeData) {
     }
 
     if (nodeData.dialogue == '') {
-        document.getElementById('dialogueBox').parentElement.classList.add('hidden');
+        $('dialogueBox').parentElement.classList.add('hidden');
     } else {
-        document.getElementById('dialogueBox').parentElement.classList.remove('hidden');
+        $('dialogueBox').parentElement.classList.remove('hidden');
         typeDialogue(nodeData.dialogue, nodeData.speaker, nodeData.speakerColor);
     }
 
@@ -389,6 +421,19 @@ function applyAnimations(sprite) {
         });
     }
 
+    if (classes.includes("exit_fade")) {
+        sprite.mesh.material.transparent = true;
+        sprite.mesh.material.opacity = 1;
+        tween({
+            from: 1,
+            to: 0,
+            duration: 500,
+            onUpdate: (value) => {
+                sprite.mesh.material.opacity = value;
+            }
+        });
+    }
+
     if (classes.includes("fx_surprised")) {
         const originalY = sprite.mesh.position.y;
         tween({
@@ -410,4 +455,212 @@ function applyAnimations(sprite) {
             }
         });
     }
+    
+    if (classes.includes("enter_from_left")) {
+        const targetX = sprite.mesh.position.x;
+        sprite.mesh.position.x = targetX - 100;
+        sprite.mesh.material.transparent = true;
+        sprite.mesh.material.opacity = 0;
+        
+        tween({
+            from: sprite.mesh.position.x,
+            to: targetX,
+            duration: 300,
+            onUpdate: (value) => {
+                sprite.mesh.position.x = value;
+            }
+        });
+        
+        tween({
+            from: 0,
+            to: 1,
+            duration: 300,
+            onUpdate: (value) => {
+                sprite.mesh.material.opacity = value;
+            }
+        });
+    }
+    
+    if (classes.includes("enter_from_right")) {
+        const targetX = sprite.mesh.position.x;
+        sprite.mesh.position.x = targetX + 100;
+        sprite.mesh.material.transparent = true;
+        sprite.mesh.material.opacity = 0;
+        
+        tween({
+            from: sprite.mesh.position.x,
+            to: targetX,
+            duration: 300,
+            onUpdate: (value) => {
+                sprite.mesh.position.x = value;
+            }
+        });
+        
+        tween({
+            from: 0,
+            to: 1,
+            duration: 300,
+            onUpdate: (value) => {
+                sprite.mesh.material.opacity = value;
+            }
+        });
+    }
+    
+    if (classes.includes("enter_from_top")) {
+        const targetY = sprite.mesh.position.y;
+        sprite.mesh.position.y = targetY - 100;
+        sprite.mesh.material.transparent = true;
+        sprite.mesh.material.opacity = 0;
+        
+        tween({
+            from: sprite.mesh.position.y,
+            to: targetY,
+            duration: 300,
+            onUpdate: (value) => {
+                sprite.mesh.position.y = value;
+            }
+        });
+        
+        tween({
+            from: 0,
+            to: 1,
+            duration: 300,
+            onUpdate: (value) => {
+                sprite.mesh.material.opacity = value;
+            }
+        });
+    }
+    
+    if (classes.includes("enter_from_bottom")) {
+        const targetY = sprite.mesh.position.y;
+        sprite.mesh.position.y = targetY + 100;
+        sprite.mesh.material.transparent = true;
+        sprite.mesh.material.opacity = 0;
+        
+        tween({
+            from: sprite.mesh.position.y,
+            to: targetY,
+            duration: 300,
+            onUpdate: (value) => {
+                sprite.mesh.position.y = value;
+            }
+        });
+        
+        tween({
+            from: 0,
+            to: 1,
+            duration: 300,
+            onUpdate: (value) => {
+                sprite.mesh.material.opacity = value;
+            }
+        });
+    }
+    
+    if (classes.includes("fx_shake")) {
+        const originalX = sprite.mesh.position.x;
+        let step = 0;
+        const shakeSteps = [5, -5, 3, -3, 0];
+        
+        function doShakeStep() {
+            if (step >= shakeSteps.length) return;
+            
+            const targetX = originalX + shakeSteps[step];
+            tween({
+                from: sprite.mesh.position.x,
+                to: targetX,
+                duration: 50,
+                onUpdate: (value) => {
+                    sprite.mesh.position.x = value;
+                },
+                onComplete: () => {
+                    step++;
+                    doShakeStep();
+                }
+            });
+        }
+        
+        doShakeStep();
+    }
+    
+    if (classes.includes("fx_bounce")) {
+        const originalY = sprite.mesh.position.y;
+        let step = 0;
+        const bounceSteps = [8, 0, 4, 0];
+        
+        function doBounceStep() {
+            if (step >= bounceSteps.length) return;
+            
+            const targetY = originalY - bounceSteps[step];
+            tween({
+                from: sprite.mesh.position.y,
+                to: targetY,
+                duration: 100,
+                onUpdate: (value) => {
+                    sprite.mesh.position.y = value;
+                },
+                onComplete: () => {
+                    step++;
+                    doBounceStep();
+                }
+            });
+        }
+        
+        doBounceStep();
+    }
+    
+    if (classes.includes("fx_pulse")) {
+        const originalScaleX = sprite.mesh.scale.x;
+        const originalScaleY = sprite.mesh.scale.y;
+        const scaleFactor = 1.1;
+        
+        tween({
+            from: 1,
+            to: scaleFactor,
+            duration: 150,
+            onUpdate: (value) => {
+                sprite.mesh.scale.set(originalScaleX * value, originalScaleY * value, 1);
+            },
+            onComplete: () => {
+                tween({
+                    from: scaleFactor,
+                    to: 1,
+                    duration: 150,
+                    onUpdate: (value) => {
+                        sprite.mesh.scale.set(originalScaleX * value, originalScaleY * value, 1);
+                    }
+                });
+            }
+        });
+    }
+}
+
+function checkChoiceConditions(choice) {
+    if (!choice.row.itemDetails.conditions || !Array.isArray(choice.row.itemDetails.conditions) || 
+        choice.row.itemDetails.conditions.length === 0) {
+        return true;
+    }
+    
+    return choice.row.itemDetails.conditions.every(condition => {
+        if (!condition.variable || !condition.operator || condition.value === undefined) {
+            return true;
+        }
+        
+        const variable = window.globalVariables.get(condition.variable);
+        if (!variable) return false; 
+        
+        const currentValue = variable.defaultValue;
+        
+        switch (condition.operator) {
+            case '=':
+                return currentValue == condition.value;
+            case '>':
+                return currentValue > condition.value;
+            case '<':
+                return currentValue < condition.value;
+            case '!=':
+                return currentValue != condition.value;
+            default:
+                return true; 
+        }
+    });
 }

@@ -1,3 +1,5 @@
+import { uiConfig } from "./config.js";
+import { $ } from "./ui.js";
 export function createRow(nodeData, details = {}, svg, connections, prevId) {
     const nodes = window.nodes;
     const node = nodeData.element;
@@ -8,6 +10,14 @@ export function createRow(nodeData, details = {}, svg, connections, prevId) {
     content.textContent = details.title || "PRE_CONT";
     details.title = details.title || "PRE_CONT"
     content.className = "truncate"
+    
+    if (!details.conditions) {
+        details.conditions = [];
+    }
+    if (details.isDefault === undefined) {
+        details.isDefault = false;
+    }
+    
     attachEditButton(row);
     enableItemEditing(row);
     row.appendChild(content);
