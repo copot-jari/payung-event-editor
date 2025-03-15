@@ -123,10 +123,10 @@ export function saveStateToDB(db, connections) {
   db.run("DELETE FROM conditions");
   db.run("DELETE FROM items");
   db.run("DELETE FROM nodes");
-  db.run("DELETE FROM entities");
   db.run("DELETE FROM sounds");
   db.run("DELETE FROM changes");
   db.run("DELETE FROM variables");
+  // Note: We don't delete entities as they persist across saves
 
   const base64FileCache = new Map(); 
 
@@ -144,7 +144,7 @@ export function saveStateToDB(db, connections) {
   }) => {
       const x = parseInt(element.style.left) || 0;
       const y = parseInt(element.style.top) || 0;
-      const title = element.querySelector("div.font-bold")?.textContent || "";
+      const title = element.querySelector("div.font-semibold")?.textContent || "";
       
       db.run("INSERT INTO nodes (id, trigger_id, x, y, title) VALUES (?, ?, ?, ?, ?)", 
         [id, trigger_id || null, x, y, title]);

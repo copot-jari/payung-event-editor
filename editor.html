@@ -6,8 +6,8 @@
     <title>Payung Dialog Composer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
-    <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
@@ -22,7 +22,8 @@
         }
       }
     </script>
-    <script src="https://unpkg.com/@heroicons/v2/24/outline/esm/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/heroicons@2.2.0/+esm"></script>
+     
     <style>
       /* Modal overlay styles */
       .custom-modal-overlay {
@@ -336,6 +337,18 @@
               <input id="speakerInput" type="text" placeholder="Speaker/Actor" class="flex-1 p-2 bg-[#030712] rounded text-sm">
               <input type="color" id="speakerColorPicker" value="#ffffff" class="w-10 h-8 rounded bg-[#030712] border border-[#3d444d]">
             </div>
+
+            <div class="entity-input-container items-center bg-opacity-10 bg-white p-2 rounded mt-2">
+              <div class="flex items-center gap-2">
+                <select id="entitySelect" class="flex-1 p-2 bg-[#030712] rounded text-sm">
+                  <option value="">No Entity Trigger</option>
+                </select>
+                <button id="addEntityBtn" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-3 py-1.5 rounded text-sm">
+                  Add Entity
+                </button>
+              </div>
+            </div>
+
             <div class="mt-4">
               <textarea id="dialogueInput" placeholder="Enter dialogue (Markdown supported)" class="w-full h-48 bg-[#030712] rounded text-sm"></textarea>
             </div>
@@ -491,6 +504,37 @@
         <div class="mt-6 flex justify-end gap-2">
           <button id="saveVariables" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-4 py-2 rounded">
             Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="entityModal" class="fixed hidden left-0 top-0 w-full h-full bg-black bg-opacity-50 backdrop-blur-sm justify-center items-center flex">
+      <div class="bg-[#030712] p-8 rounded-lg shadow-lg border border-[#343740] w-[600px]">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold">Entity Editor</h2>
+          <button id="closeEntityEditor" class="text-gray-400 hover:text-white">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="space-y-4">
+          <div>
+            <label for="entityTitleInput" class="block text-sm font-medium mb-1">Title</label>
+            <input id="entityTitleInput" type="text" class="w-full p-2 bg-[#1a1c23] border border-[#343740] rounded" placeholder="Enter entity title">
+          </div>
+          <div>
+            <label for="entityThumbnail" class="block text-sm font-medium mb-1">Thumbnail</label>
+            <div class="flex items-center gap-2">
+              <input type="file" id="entityThumbnail" accept="image/*" class="hidden">
+              <button id="uploadEntityThumbnail" class="bg-blue-700 bg-opacity-50 hover:bg-opacity-100 transition border-blue-700 border text-white px-3 py-1.5 rounded text-sm">Upload Thumbnail</button>
+              <img id="entityThumbnailPreview" class="hidden h-16 w-16 object-cover rounded border border-[#343740]">
+            </div>
+          </div>
+        </div>
+        <div class="mt-6 flex justify-end gap-2">
+          <button id="saveEntity" class="bg-green-700 bg-opacity-50 hover:bg-opacity-100 transition border-green-700 border text-white px-4 py-2 rounded">
+            Save Entity
           </button>
         </div>
       </div>

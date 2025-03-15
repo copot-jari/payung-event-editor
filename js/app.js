@@ -31,7 +31,8 @@ import {
 } from "./sprite.js";
 import { 
   closeSidebar, 
-  iniializeSidebar 
+  iniializeSidebar,
+  selectNodeAndUpdateSidebar 
 } from "./sidebar.js";
 import {
   setupEditorEvents,
@@ -44,6 +45,7 @@ import {
 import { initVariableEditor, loadVariables, populateVariableEditor } from './variables.js';
 import { initializeScriptEditor, getScriptContent, clearScriptContent } from './scriptParser.js';
 import { populateNodeVariableChanges } from './nodeVariables.js';
+import { loadEntities, initEntityEditor } from './entities.js';
 
 window.nodes = [];
 window.selectedNode = null;
@@ -59,7 +61,8 @@ async function initializeApp() {
     window.connections = [];
     window.globalVariables = [];
     window.currentProjectPath = null;
-
+    console.log("DB Instance")
+    console.log(window.dbInstance)
     const urlParams = new URLSearchParams(window.location.search);
     const projectPath = urlParams.get('project');
     
@@ -74,6 +77,8 @@ async function initializeApp() {
             if (success) {
                 await loadStateFromDBToUI(window.db, editor, window.connections, spriteList);
                 window.globalVariables = await loadVariables(window.db);
+                await loadEntities();
+                iniializeSidebar();
             } else {
                 console.error('Failed to load project from path:', projectPath);
                 alert('Failed to load project. Please try again.');
@@ -85,6 +90,7 @@ async function initializeApp() {
     }
 
     initVariableEditor();
+    initEntityEditor();
 
     setupPanning();
     setupEditorEvents();
@@ -203,7 +209,9 @@ editor.addEventListener(uiConfig.events.nodeSelected, e => {
   if (window.connectionSelectionMode || !sidebar.classList.contains(uiConfig.classes.hidden)) {
     closeSidebar()
   }
+  const nodeData = window.nodes.find(n => n.element === e.detail.node);
   selectNode(e.detail.node, false);
+  selectNodeAndUpdateSidebar(nodeData);
 });
 
 window.addEventListener("keyup", e => {
@@ -372,7 +380,6 @@ async function animate() {
 }
 requestAnimationFrame(animate);
 
-iniializeSidebar();
 
 
   $('parseScript').addEventListener('click', () => {

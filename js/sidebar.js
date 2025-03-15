@@ -4,6 +4,7 @@ import { $ } from "./ui.js";
 import { uiConfig } from "./config.js";
 import { bulkDeleteNodes } from "./editorService.js";
 import { initNodeVariableChanges, populateNodeVariableChanges } from "./nodeVariables.js";
+import { initEntityEditor, loadEntities, setSelectedNodeEntity } from "./entities.js";
 
 export function closeSidebar() {
     
@@ -121,6 +122,10 @@ export function iniializeSidebar() {
         $('Preview').addEventListener('click', previewSceneStart)
         
         initNodeVariableChanges();
+
+        // Initialize entity editor
+        initEntityEditor();
+        loadEntities();
     });
 
     $(uiConfig.selectors.duplicateNodeButton).addEventListener("click", () => {
@@ -133,6 +138,24 @@ export function iniializeSidebar() {
         }
     });
 
+}
+
+export function selectNodeAndUpdateSidebar(nodeData) {
+    if (!nodeData) return;
+    
+    window.selectedNodeData = nodeData;
+    window.selectedNode = nodeData.element;
+    window.selectedNodeDOM = nodeData.element;
+    
+    setSelectedNodeEntity(nodeData);
+    
+    $(uiConfig.selectors.speakerInput).value = nodeData.speaker || "";
+    if (window.dialogueEditor) {
+        window.dialogueEditor.value(nodeData.dialogue || "");
+    }
+    $('speakerColorPicker').value = nodeData.speakerColor || "#ffffff";
+    
+    updateNodeTitle();
 }
 
 function previewFlow(db, startingNodeId) {     
