@@ -123,10 +123,10 @@ export function saveStateToDB(db, connections) {
   db.run("DELETE FROM conditions");
   db.run("DELETE FROM items");
   db.run("DELETE FROM nodes");
+  db.run("DELETE FROM entities");
   db.run("DELETE FROM sounds");
   db.run("DELETE FROM changes");
   db.run("DELETE FROM variables");
-  // Note: We don't delete entities as they persist across saves
 
   const base64FileCache = new Map(); 
 
@@ -144,7 +144,7 @@ export function saveStateToDB(db, connections) {
   }) => {
       const x = parseInt(element.style.left) || 0;
       const y = parseInt(element.style.top) || 0;
-      const title = element.querySelector("div.font-semibold")?.textContent || "";
+      const title = element.querySelector("div.font-bold")?.textContent || "";
       
       db.run("INSERT INTO nodes (id, trigger_id, x, y, title) VALUES (?, ?, ?, ?, ?)", 
         [id, trigger_id || null, x, y, title]);
@@ -274,6 +274,16 @@ export function saveStateToDB(db, connections) {
       db.run("INSERT INTO connections (from_node_id, from_item_id, to_node_id) VALUES (?, ?, ?)", 
         [from.nodeId, from.itemId, to.nodeId]);
   });
+
+  if (window.globalVariables && window.globalVariables.size > 0) {
+    window.globalVariables.forEach((value, key) => {
+      const stmt = db.prepare(
+        'INSERT INTO variables (id, key, type, default_value) VALUES (?, ?, ?, ?)'
+      );
+      stmt.run([value.id, key, value.type, JSON.stringify(value.defaultValue)]);
+      stmt.free();
+    });
+  }
 
   console.log("State saved to database with optimized schema.");
 }

@@ -1,6 +1,11 @@
 import * as THREE from 'three';
 import { $ } from './ui.js';
-import { applyNodeVariableChanges } from './nodeVariables.js';
+
+// Add toast container to the DOM
+const toastContainer = document.createElement('div');
+toastContainer.id = 'variableToastContainer';
+toastContainer.className = 'fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-xs w-full';
+document.body.appendChild(toastContainer);
 
 const canvas = $('sceneCanvas');
 const canvasContainer = $('canvasContainer');
@@ -127,8 +132,17 @@ export function loadSceneForNode(nodeData) {
     currentDialogue = nodeData;
     window.multiChoice = true
     
+    // For posterity sake
+    if (!window.globalFlags) {
+        window.globalFlags = new Map();
+    }
+    
     if (window.globalVariables && nodeData.variableChanges && Array.isArray(nodeData.variableChanges)) {
         applyNodeVariableChanges(nodeData);
+    }
+    
+    if (window.globalFlags && nodeData.flagChanges && Array.isArray(nodeData.flagChanges)) {
+        applyNodeFlagChanges(nodeData);
     }
 
     if (nodeData.rows.length > 0) {
@@ -635,32 +649,190 @@ function applyAnimations(sprite) {
 }
 
 function checkChoiceConditions(choice) {
-    if (!choice.row.itemDetails.conditions || !Array.isArray(choice.row.itemDetails.conditions) || 
-        choice.row.itemDetails.conditions.length === 0) {
+    // 
+    if (
+        (!choice.row.itemDetails.conditions || !Array.isArray(choice.row.itemDetails.conditions) || choice.row.itemDetails.conditions.length === 0) &&
+        (!choice.row.itemDetails.flags || !Array.isArray(choice.row.itemDetails.flags) || choice.row.itemDetails.flags.length === 0)
+    ) {
         return true;
     }
     
-    return choice.row.itemDetails.conditions.every(condition => {
-        if (!condition.variable || !condition.operator || condition.value === undefined) {
-            return true;
-        }
-        
-        const variable = window.globalVariables.get(condition.variable);
-        if (!variable) return false; 
-        
-        const currentValue = variable.defaultValue;
-        
-        switch (condition.operator) {
-            case '=':
-                return currentValue == condition.value;
-            case '>':
-                return currentValue > condition.value;
-            case '<':
-                return currentValue < condition.value;
-            case '!=':
-                return currentValue != condition.value;
-            default:
+    
+    const conditionsPass = !choice.row.itemDetails.conditions || !Array.isArray(choice.row.itemDetails.conditions) || 
+        choice.row.itemDetails.conditions.length === 0 || 
+        choice.row.itemDetails.conditions.every(condition => {
+            if (!condition.variable || !condition.operator || condition.value === undefined) {
                 return true; 
+            }
+            
+            const variable = window.globalVariables.get(condition.variable);
+            if (!variable) return false; 
+            
+            const currentValue = variable.defaultValue;
+            let conditionValue = condition.value;
+            
+            
+            if (variable.type === 'number') {
+                conditionValue = Number(conditionValue);
+            } else if (variable.type === 'boolean') {
+                conditionValue = conditionValue === 'true' || conditionValue === true;
+            }
+            
+            switch (condition.operator) {
+                case '=':
+                case '==':
+                    return currentValue == conditionValue;
+                case '>':
+                    return currentValue > conditionValue;
+                case '<':
+                    return currentValue < conditionValue;
+                case '!=':
+                case '<>':
+                    return currentValue != conditionValue;
+                case '>=':
+                    return currentValue >= conditionValue;
+                case '<=':
+                    return currentValue <= conditionValue;
+                default:
+                    return true; 
+            }
+        });
+
+    
+    return conditionsPass;
+}
+
+
+function initializeGlobalFlags() {
+    if (!window.globalFlags) {
+        window.globalFlags = new Map();
+    }
+}
+
+function applyNodeVariableChanges(nodeData) {
+    if (!nodeData.variableChanges || !Array.isArray(nodeData.variableChanges) || !window.globalVariables) {
+        return;
+    }
+    
+    nodeData.variableChanges.forEach(change => {
+        if (!change.variable) return;
+        
+        const variable = window.globalVariables.get(change.variable);
+        if (!variable) return;
+        
+        const oldValue = variable.defaultValue;
+        let newValue = oldValue;
+        
+        
+        switch (change.operation) {
+            case 'set':
+                newValue = change.value;
+                break;
+            case 'add':
+                newValue = oldValue + change.value;
+                break;
+            case 'subtract':
+                newValue = oldValue - change.value;
+                break;
+            case 'multiply':
+                newValue = oldValue * change.value;
+                break;
+            case 'divide':
+                if (change.value !== 0) {
+                    newValue = oldValue / change.value;
+                }
+                break;
+            case 'toggle':
+                newValue = !oldValue;
+                break;
         }
+        
+        
+        variable.defaultValue = newValue;
+        window.globalVariables.set(change.variable, variable);
+        
+        
+        showVariableChangeToast(change.variable, oldValue, newValue);
     });
+}
+
+function showVariableChangeToast(variableName, oldValue, newValue) {
+    const toast = document.createElement('div');
+    toast.className = 'bg-black bg-opacity-80 text-white px-4 py-2 rounded shadow-lg transition-all duration-500 transform translate-x-full';
+    
+    
+    let message = '';
+    if (typeof newValue === 'boolean') {
+        message = `${variableName} is now ${newValue ? 'true' : 'false'}`;
+    } else if (typeof newValue === 'number') {
+        const change = newValue - oldValue;
+        const sign = change > 0 ? '+' : '';
+        message = `${variableName}: ${newValue} (${sign}${change})`;
+    } else {
+        message = `${variableName} changed to ${newValue}`;
+    }
+    
+    toast.textContent = message;
+    
+    
+    toastContainer.appendChild(toast);
+    
+    
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+    }, 10);
+    
+    
+    setTimeout(() => {
+        toast.classList.add('translate-x-full', 'opacity-0');
+        setTimeout(() => {
+            toastContainer.removeChild(toast);
+        }, 500);
+    }, 3000);
+}
+
+function applyNodeFlagChanges(nodeData) {
+    if (!nodeData.flagChanges || !Array.isArray(nodeData.flagChanges) || !window.globalFlags) {
+        return;
+    }
+    
+    nodeData.flagChanges.forEach(change => {
+        if (!change.flag_name) return;
+        
+        
+        const oldValue = window.globalFlags.has(change.flag_name) 
+            ? window.globalFlags.get(change.flag_name) 
+            : false;
+        
+        
+        window.globalFlags.set(change.flag_name, change.value === true);
+        
+        
+        showFlagChangeToast(change.flag_name, oldValue, change.value === true);
+    });
+}
+
+function showFlagChangeToast(flagName, oldValue, newValue) {
+    const toast = document.createElement('div');
+    toast.className = 'bg-black bg-opacity-80 text-white px-4 py-2 rounded shadow-lg transition-all duration-500 transform translate-x-full';
+    
+    
+    const message = `Flag ${flagName} is now ${newValue ? 'active' : 'inactive'}`;
+    toast.textContent = message;
+    
+    
+    toastContainer.appendChild(toast);
+    
+    
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+    }, 10);
+    
+    
+    setTimeout(() => {
+        toast.classList.add('translate-x-full', 'opacity-0');
+        setTimeout(() => {
+            toastContainer.removeChild(toast);
+        }, 500);
+    }, 3000);
 }
