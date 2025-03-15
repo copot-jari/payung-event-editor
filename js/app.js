@@ -76,9 +76,10 @@ async function initializeApp() {
             
             if (success) {
                 await loadStateFromDBToUI(window.db, editor, window.connections, spriteList);
+                iniializeSidebar();
+
                 window.globalVariables = await loadVariables(window.db);
                 await loadEntities();
-                iniializeSidebar();
             } else {
                 console.error('Failed to load project from path:', projectPath);
                 alert('Failed to load project. Please try again.');

@@ -54,13 +54,14 @@ function updateNodeTitle() {
 }
 
 export function iniializeSidebar() {
-    document.addEventListener("DOMContentLoaded", () => {
+        console.log("Initializing sidebar");
         window.dialogueEditor = new EasyMDE({
             element: $(uiConfig.selectors.dialogueInput),
             toolbar: false,
             autoDownloadFontAwesome: false,
             spellChecker: false,
         });
+        console.log("dialogue editor initialized");
         
         window.dialogueEditor.codemirror.on("change", () => {
             if (window.selectedNodeData) {
@@ -68,24 +69,26 @@ export function iniializeSidebar() {
                 updateNodeTitle();
             }
         });
-        
+        console.log("dialogue editor change listener initialized");
         $(uiConfig.selectors.speakerInput).addEventListener("input", (e) => {
             if (window.selectedNodeData) {
                 window.selectedNodeData.speaker = e.target.value;
                 updateNodeTitle();
             }
         });
+        console.log("speaker input listener initialized");
         const speakerColorPicker = $('speakerColorPicker');
         speakerColorPicker.addEventListener('input', (e) => {
             if (window.selectedNodeData) {
                 window.selectedNodeData.speakerColor = e.target.value;
             }
         });
-        
+        console.log("speaker color picker listener initialized");
+
         $(uiConfig.selectors.deleteNodeButtonSidebar).addEventListener('click', () => {
             $(uiConfig.selectors.deleteNodeModal).classList.remove(uiConfig.classes.hidden); 
         });
-
+        console.log("delete node button listener initialized");     
         $(uiConfig.selectors.confirmDeleteNodeButton).addEventListener('click', () => {
             const deleteNodeModal = $(uiConfig.selectors.deleteNodeModal);
             
@@ -98,6 +101,7 @@ export function iniializeSidebar() {
             
             deleteNodeModal.classList.add(uiConfig.classes.hidden); 
         });
+        console.log("confirm delete node button listener initialized");
 
         $(uiConfig.selectors.cancelDeleteNodeButton).addEventListener('click', () => {
             const deleteNodeModal = $(uiConfig.selectors.deleteNodeModal);
@@ -118,15 +122,15 @@ export function iniializeSidebar() {
             
             deleteNodeModal.classList.add(uiConfig.classes.hidden); 
         });
+        console.log("cancel delete node button listener initialized");
         $('inheritPrevious').addEventListener('click', inheritPreviousNode)
         $('Preview').addEventListener('click', previewSceneStart)
         
         initNodeVariableChanges();
-
+        console.log("node variable changes listener initialized");
         // Initialize entity editor
         initEntityEditor();
         loadEntities();
-    });
 
     $(uiConfig.selectors.duplicateNodeButton).addEventListener("click", () => {
         if (window.selectedNode) {

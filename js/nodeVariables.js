@@ -120,6 +120,8 @@ export function buildVariableChangeRow(variableChange = { variable: '', operatio
 export function initNodeVariableChanges() {
     const addVariableChangeBtn = $('addVariableChange');
     const nodeVariableChangesContainer = $('nodeVariableChanges');
+    console.log("initNodeVariableChanges");
+    console.log(addVariableChangeBtn, nodeVariableChangesContainer);
     
     if (!addVariableChangeBtn || !nodeVariableChangesContainer) return;
     
